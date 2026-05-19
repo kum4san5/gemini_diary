@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // 送信先のURL（適宜書き換えてください）
-            const API_URL = 'https://jvhr7cdl-5678.jpe1.devtunnels.ms//webhook-test/diary';
+            const API_URL = 'https://jvhr7cdl-5678.jpe1.devtunnels.ms/webhook-test/diary';
 
             const response = await fetch(API_URL, {
                 method: 'POST',

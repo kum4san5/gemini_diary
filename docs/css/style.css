@@ -80,3 +80,109 @@ button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
 }
+
+/* Result Area Styles */
+.result-area {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px dashed #eee;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.result-area.hidden {
+    display: none;
+}
+
+.result-card h2 {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.result-section {
+    margin-bottom: 1.5rem;
+}
+
+.result-section h3 {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.text-display {
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.text-display.original {
+    background-color: #f9f9f9;
+    color: #777;
+    border-left: 4px solid #ddd;
+}
+
+.text-display.corrected {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    border-left: 4px solid var(--primary-color);
+    font-weight: 500;
+}
+
+.feedback-display {
+    background-color: #fff9c4;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #5d4037;
+    white-space: pre-wrap;
+}
+
+.secondary-btn {
+    margin-top: 1rem;
+    background-color: #eee;
+    color: #666;
+}
+
+.secondary-btn:hover {
+    background-color: #ddd;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dark Mode Overrides for Result Area */
+body.dark-mode .result-area {
+    border-top-color: #444;
+}
+
+body.dark-mode .text-display.original {
+    background-color: #2a2a2a;
+    color: #aaa;
+    border-left-color: #555;
+}
+
+body.dark-mode .text-display.corrected {
+    background-color: #1a237e;
+    color: #bbdefb;
+    border-left-color: #4a90e2;
+}
+
+body.dark-mode .feedback-display {
+    background-color: #3e2723;
+    color: #ffe0b2;
+}
+
+body.dark-mode .secondary-btn {
+    background-color: #333;
+    color: #ccc;
+}
+
+body.dark-mode .secondary-btn:hover {
+    background-color: #444;
+}

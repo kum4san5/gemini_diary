@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // 送信先のURL（適宜書き換えてください）
-            const API_URL = 'https://script.google.com/macros/s/AKfycbzXtUfr27UcahOh9PdrpEOzHXG8n9tyO3n7xG0-y3C6-NrAhdZ8sqmaQYJtRZJeXow_0Q/exec';
+            const API_URL = 'https://script.google.com/macros/s/AKfycbwZZZhJ7DlwtqTYxdO0sJMek6PZqoudFtX4JyxYa7HirFL7B4ILBBckccjLVxBzUNx5Zw/exec';
+            
 
             const response = await fetch(API_URL, {
                 method: 'POST',

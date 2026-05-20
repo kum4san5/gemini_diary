@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI English Diary</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components/spinner.css">
+    <link rel="stylesheet" href="css/components/dark-mode-toggle.css">
+</head>
+<body>
+    <!-- ... 既存のヘッダーやナビゲーションなど ... -->
+
+    <button class="dark-mode-toggle" id="darkModeToggle">ダークモードを切り替え</button>
+
+    <!-- ... 既存のメインコンテンツ ... -->
+    <main>
+        <div class="container">
+            <h1>AI English Diary</h1>
+            
+            <div class="form-group">
+                <label for="date">日付</label>
+                <input type="date" id="date">
+            </div>
+
+            <div class="form-group">
+                <label for="diary">今日の出来事（英語）</label>
+                <textarea id="diary" placeholder="Today, I went to..."></textarea>
+            </div>
+
+            <button id="submit-btn">AI先生に添削してもらう</button>
+        </div>
+    </main>
+
+    <!-- ローディングスピナーのHTMLを追加 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- ... 既存のフッターなど ... -->
+    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/components/darkModeToggle.js"></script>
+</body>
+</html>

@@ -359,3 +359,65 @@ body.dark-mode .secondary-btn {
 body.dark-mode .secondary-btn:hover {
     background-color: #444;
 }
+
+
+/* ==========================================
+   📱 スマートフォン・タブレット向けのレスポンシブ対応
+   ========================================== */
+@media (max-width: 768px) {
+    /* 1. 全体の余白と外枠をスマホサイズに最適化 */
+    body {
+        padding: 10px;
+        align-items: flex-start; /* 上詰めで配置 */
+        min-height: auto;
+    }
+
+    /* 2. 横並び(flex)から縦並び(column)へ変更 */
+    .main-container {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 25px;
+    }
+
+    /* 3. 各セクションの横幅を100%にしてリサイズ制限を解除 */
+    .calendar-section, 
+    .diary-detail-section {
+        width: 100%;
+        min-width: 0; /* 横幅の縛りをリセット */
+        flex: none;
+    }
+
+    /* 4. カレンダー自体のサイズを画面幅いっぱいに広げる */
+    .flatpickr-calendar,
+    #calendar-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+    
+    .flatpickr-innerContainer,
+    .flatpickr-rwd,
+    .flatpickr-days,
+    .dayContainer {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* 5. 日記カード内の文字サイズをスマホ向けに微調整 */
+    .diary-card h3 {
+        font-size: 1rem;
+    }
+    
+    .diary-card p {
+        font-size: 0.9rem;
+    }
+
+    /* 6. ダークモード切り替えボタンの位置を押しやすい場所に調整 */
+    .dark-mode-toggle {
+        position: static; /* 画面固定をやめる */
+        display: block;
+        width: 100%;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+}

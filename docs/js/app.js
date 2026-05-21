@@ -5,25 +5,6 @@ let allDiaries = []; // 全日記データを保持する配列
 
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwZZZhJ7DlwtqTYxdO0sJMek6PZqoudFtX4JyxYa7HirFL7B4ILBBckccjLVxBzUNx5Zw/exec'; // ★★★ あなたのGASウェブアプリのURLに置き換えてください ★★★
 
-async function fetchDiaries() {
-    showLoadingSpinner();
-    try {
-        const response = await fetch(`${GAS_WEB_APP_URL}?action=getDiaries`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        allDiaries = data;
-        console.log('Fetched diaries:', allDiaries);
-        return allDiaries;
-    } catch (error) {
-        console.error('Error fetching diaries:', error);
-        alert('日記データの取得中にエラーが発生しました。');
-        return [];
-    } finally {
-        hideLoadingSpinner();
-    }
-}
 
 function showLoadingSpinner() {
     document.getElementById('loading-overlay').classList.add('visible');

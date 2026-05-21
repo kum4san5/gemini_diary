@@ -33,16 +33,16 @@ function hideLoadingSpinner() {
     document.getElementById('loading-overlay').classList.remove('visible');
 }
 
-function setupCalendar(diaries) {
+export function setupCalendar(diaries) {
     const diaryDates = diaries.map(diary => diary.date);
     
     flatpickr("#flatpickr-calendar", {
         dateFormat: "Y-m-d",
         inline: true,
         onDayCreate: (dObj, dStr, fp, dayElem) => {
-            const date = dayElem.dateObj.toISOString().split('T')[0];
+            const date = dayElem.dateObj.toISOString().split("T")[0];
             if (diaryDates.includes(date)) {
-                dayElem.classList.add('has-diary');
+                dayElem.classList.add("has-diary");
             }
         },
         onChange: (selectedDates, dateStr, instance) => {
@@ -51,14 +51,14 @@ function setupCalendar(diaries) {
     });
 }
 
-function displayDiariesForDate(dateStr) {
-    const diaryDetailContainer = document.getElementById('diary-detail-container');
-    diaryDetailContainer.innerHTML = ''; // クリア
+export function displayDiariesForDate(dateStr) {
+    const diaryDetailContainer = document.getElementById("diary-detail-container");
+    diaryDetailContainer.innerHTML = ""; // クリア
 
     const diariesForSelectedDate = allDiaries.filter(diary => diary.date === dateStr);
 
     if (diariesForSelectedDate.length === 0) {
-        diaryDetailContainer.innerHTML = '<p class="placeholder">この日の日記はありません。</p>';
+        diaryDetailContainer.innerHTML = `<p class="placeholder">この日の日記はありません。</p>`;
         return;
     }
 
@@ -74,7 +74,27 @@ function displayDiariesForDate(dateStr) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+export async function fetchDiaries() {
+    showLoadingSpinner();
+    try {
+        const response = await fetch(`${GAS_WEB_APP_URL}?action=getDiaries`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        allDiaries = data;
+        console.log("Fetched diaries:", allDiaries);
+        return allDiaries;
+    } catch (error) {
+        console.error("Error fetching diaries:", error);
+        alert("日記データの取得中にエラーが発生しました。");
+        return [];
+    } finally {
+        hideLoadingSpinner();
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
     setupDarkModeToggle();
     // 既存の日記投稿フォームのセットアップ
     setupDiaryForm(); 

@@ -2,8 +2,6 @@ import { setupDarkModeToggle } from './components/darkModeToggle.js';
 import { setupDiaryForm } from './components/diaryForm.js';
 import { fetchDiaries, setupCalendar } from './app.js'; // app.jsから関数をインポート
 
-// GASウェブアプリのURLを設定
-// ★★★ あなたのGASウェブアプリのURLに置き換えてください ★★★
 document.addEventListener('DOMContentLoaded', async () => {
     setupDarkModeToggle();
     setupDiaryForm();

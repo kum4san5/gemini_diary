@@ -7,6 +7,48 @@ const DATABASE_ID    = PropertiesService.getScriptProperties().getProperty('DATA
 // ==========================================================
 // 🚀 お友達からデータを受け取ったときに動く処理
 // ==========================================================
+function doGet(e) {
+    const action = e.parameter.action;
+
+    if (action === 'getDiaries') {
+        return getDiaries();
+    } else {
+        return ContentService.createTextOutput(JSON.stringify({ error: 'Invalid action' })).setMimeType(ContentService.MimeType.JSON);
+    }
+}
+
+function getDiaries() {
+    const notionEndpoint = `https://api.notion.com/v1/databases/${DATABASE_ID}/query`;
+    const headers = {
+        'Authorization': `Bearer ${NOTION_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28'
+    };
+
+    const options = {
+        'method': 'post',
+        'headers': headers,
+        'payload': JSON.stringify({ sort: [{ property: "名前", direction: "descending" }] }), // 日付でソート
+        'muteHttpExceptions': true
+    };
+
+    const response = UrlFetchApp.fetch(notionEndpoint, options);
+    const jsonResponse = JSON.parse(response.getContentText());
+
+    const diaries = jsonResponse.results.map(page => {
+        const dateProperty = page.properties["名前"].title[0]?.text?.content; // '名前'列から日付を取得
+        const textProperty = page.properties["添削元文章"].rich_text[0]?.text?.content; // '添削元文章'列から日記テキストを取得
+        const correctionProperty = page.properties["添削"].rich_text[0]?.text?.content; // '添削'列から添削内容を取得
+
+        return {
+            date: dateProperty || "",
+            text: textProperty || "",
+            correction: correctionProperty || ""
+        };
+    });
+    return ContentService.createTextOutput(JSON.stringify(diaries)).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   try {
     // 1. お友達のブラウザから届いた日記の文字を取り出す

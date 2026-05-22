@@ -7,7 +7,7 @@
     --placeholder-color: #aaa;
 }
 
-/* 🟢 ダークモードの変数定義 */
+/* 🟢 システムやJSと連動するダークモード用変数 */
 body.dark-mode {
     --bg-color: #1e1e1e;
     --card-bg: #2c2c2c;
@@ -23,42 +23,13 @@ body {
     margin: 0;
     padding: 20px;
     display: flex;
-    flex-direction: column; /* 縦並びに変更 */
+    flex-direction: column;
     align-items: center;
     min-height: 100vh;
     box-sizing: border-box;
     transition: background-color 0.3s, color 0.3s;
 }
 
-/* 🟢 ダークモード切り替えボタン（PC・スマホ両対応のきれいな配置） */
-.dark-mode-toggle {
-    align-self: flex-end; /* 右寄せ */
-    max-width: 180px;
-    margin-bottom: 20px;
-    padding: 10px 15px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-}
-
-.dark-mode-toggle:hover {
-    background-color: #357abd;
-}
-
-body.dark-mode .dark-mode-toggle {
-    background-color: #28a745;
-}
-
-body.dark-mode .dark-mode-toggle:hover {
-    background-color: #218838;
-}
-
-/* 🟢 メインレイアウト */
 main {
     width: 100%;
     max-width: 1200px;
@@ -88,7 +59,7 @@ body.dark-mode .main-container {
 .diary-detail-section {
     flex: 2;
     min-width: 400px;
-    background-color: var(--bg-color); /* 変数に変更して自動で暗く */
+    background-color: var(--bg-color);
     padding: 1.5rem;
     border-radius: 8px;
     border: 1px solid var(--border-color);
@@ -111,7 +82,6 @@ h1 {
     text-align: center;
 }
 
-/* 🟢 日記カード */
 .diary-detail-container {
     display: flex;
     flex-direction: column;
@@ -160,7 +130,6 @@ h1 {
     padding: 2rem;
 }
 
-/* 🟢 入力フォーム */
 .form-container {
     margin-top: 2rem;
     padding-top: 2rem;
@@ -224,12 +193,10 @@ button:disabled {
     cursor: not-allowed;
 }
 
-/* 🟢 結果表示エリア */
 .result-area {
     margin-top: 2rem;
     padding-top: 2rem;
     border-top: 2px dashed var(--border-color);
-    animation: fadeIn 0.5s ease-out;
 }
 
 .result-area.hidden {
@@ -302,37 +269,23 @@ body.dark-mode .feedback-display {
     color: var(--text-color);
 }
 
-/* 🟢 Flatpickr (カレンダー) のダークモード自動連動 */
+/* カレンダー(Flatpickr)のダークモード自動連動設定 */
 body.dark-mode .flatpickr-calendar {
     background-color: #2c2c2c;
     border-color: #444;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
-
-body.dark-mode .flatpickr-day {
-    color: #e0e0e0;
-}
-
+body.dark-mode .flatpickr-day { color: #e0e0e0; }
 body.dark-mode .flatpickr-day.nextMonthDay,
-body.dark-mode .flatpickr-day.prevMonthDay {
-    color: #555;
-}
-
+body.dark-mode .flatpickr-day.prevMonthDay { color: #555; }
 body.dark-mode .flatpickr-months .flatpickr-month,
 body.dark-mode .flatpickr-current-month .flatpickr-monthDropdown-months,
-body.dark-mode .flatpickr-current-month input.numInput {
-    color: #e0e0e0;
-    fill: #e0e0e0;
-}
-
-body.dark-mode .flatpickr-weekday {
-    color: #999;
-}
+body.dark-mode .flatpickr-current-month input.numInput { color: #e0e0e0; fill: #e0e0e0; }
+body.dark-mode .flatpickr-weekday { color: #999; }
 
 .flatpickr-day.has-diary {
     position: relative;
 }
-
 .flatpickr-day.has-diary:after {
     content: ".";
     color: var(--primary-color);
@@ -344,50 +297,13 @@ body.dark-mode .flatpickr-weekday {
     transform: translateX(-50%);
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 /* ==========================================
    📱 スマートフォン向けのレスポンシブ対応
    ========================================== */
 @media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
-
-    .dark-mode-toggle {
-        align-self: center; /* スマホでは中央配置 */
-        width: 100%;
-        max-width: none;
-    }
-
-    .main-container {
-        flex-direction: column;
-        padding: 1rem;
-        gap: 25px;
-    }
-
-    .calendar-section, 
-    .diary-detail-section {
-        width: 100%;
-        min-width: 0;
-        flex: none;
-    }
-
-    .flatpickr-calendar,
-    #calendar-container {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box;
-    }
-    
-    .flatpickr-innerContainer,
-    .flatpickr-rwd,
-    .flatpickr-days,
-    .dayContainer {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
+    body { padding: 10px; }
+    .main-container { flex-direction: column; padding: 1rem; gap: 25px; }
+    .calendar-section, .diary-detail-section { width: 100%; min-width: 0; flex: none; }
+    .flatpickr-calendar, #calendar-container { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
+    .flatpickr-innerContainer, .flatpickr-rwd, .flatpickr-days, .dayContainer { width: 100% !important; max-width: 100% !important; }
 }

@@ -3,33 +3,81 @@
     --bg-color: #f5f7f9;
     --card-bg: #ffffff;
     --text-color: #333;
+    --border-color: #ddd;
+    --placeholder-color: #aaa;
+}
+
+/* 🟢 ダークモードの変数定義 */
+body.dark-mode {
+    --bg-color: #1e1e1e;
+    --card-bg: #2c2c2c;
+    --text-color: #e0e0e0;
+    --border-color: #444;
+    --placeholder-color: #777;
 }
 
 body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
+    margin: 0;
+    padding: 20px;
     display: flex;
-    justify-content: center;
+    flex-direction: column; /* 縦並びに変更 */
     align-items: center;
     min-height: 100vh;
-    margin: 0;
+    box-sizing: border-box;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-.container {
+/* 🟢 ダークモード切り替えボタン（PC・スマホ両対応のきれいな配置） */
+.dark-mode-toggle {
+    align-self: flex-end; /* 右寄せ */
+    max-width: 180px;
+    margin-bottom: 20px;
+    padding: 10px 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+    background-color: #357abd;
+}
+
+body.dark-mode .dark-mode-toggle {
+    background-color: #28a745;
+}
+
+body.dark-mode .dark-mode-toggle:hover {
+    background-color: #218838;
+}
+
+/* 🟢 メインレイアウト */
+main {
     width: 100%;
-    position: relative;
+    max-width: 1200px;
 }
 
 .main-container {
     display: flex;
     gap: 20px;
-    max-width: 1200px; /* 全体の最大幅を調整 */
     width: 100%;
     background-color: var(--card-bg);
     padding: 2rem;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    box-sizing: border-box;
+    transition: background-color 0.3s;
+}
+
+body.dark-mode .main-container {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 .calendar-section {
@@ -40,19 +88,30 @@ body {
 .diary-detail-section {
     flex: 2;
     min-width: 400px;
-    background-color: #f9f9f9; /* 詳細エリアの背景色 */
-    padding: 1rem;
+    background-color: var(--bg-color); /* 変数に変更して自動で暗く */
+    padding: 1.5rem;
     border-radius: 8px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s;
+}
+
+h1 {
+    text-align: center;
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
 }
 
 .diary-detail-section h2 {
     font-size: 1.2rem;
     color: var(--primary-color);
+    margin-top: 0;
     margin-bottom: 1rem;
     text-align: center;
 }
 
+/* 🟢 日記カード */
 .diary-detail-container {
     display: flex;
     flex-direction: column;
@@ -61,11 +120,11 @@ body {
 
 .diary-card {
     background-color: var(--card-bg);
-    border: 1px solid #eee;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 1rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.2s ease-in-out, background-color 0.3s;
 }
 
 .diary-card:hover {
@@ -88,122 +147,24 @@ body {
 
 .diary-card .correction {
     font-style: italic;
-    color: #666;
-    border-left: 3px solid #ccc;
+    color: var(--text-color);
+    opacity: 0.8;
+    border-left: 3px solid var(--primary-color);
     padding-left: 10px;
 }
 
 .placeholder {
     text-align: center;
-    color: #aaa;
+    color: var(--placeholder-color);
     font-style: italic;
     padding: 2rem;
 }
 
-/* Flatpickr Customizations */
-.flatpickr-day.has-diary {
-    position: relative;
-}
-
-.flatpickr-day.has-diary:after {
-    content: ".";
-    color: var(--primary-color);
-    font-size: 3em;
-    line-height: 0.5;
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-/* Dark Mode for new elements */
-body.dark-mode .main-container {
-    background-color: #2a2a2a;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-
-body.dark-mode .diary-detail-section {
-    background-color: #1e1e1e;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
-}
-
-body.dark-mode .diary-card {
-    background-color: #333;
-    border-color: #444;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-body.dark-mode .diary-card p {
-    color: #eee;
-}
-
-body.dark-mode .diary-card .correction {
-    color: #aaa;
-    border-left-color: #555;
-}
-
-body.dark-mode .placeholder {
-    color: #777;
-}
-
+/* 🟢 入力フォーム */
 .form-container {
     margin-top: 2rem;
     padding-top: 2rem;
-    border-top: 2px dashed #eee;
-}
-
-body.dark-mode .form-container {
-    border-top-color: #444;
-}
-
-/* Adjust Flatpickr in dark mode */
-body.dark-mode .flatpickr-calendar {
-    background-color: #333;
-    border-color: #555;
-}
-
-body.dark-mode .flatpickr-day {
-    color: #eee;
-}
-
-body.dark-mode .flatpickr-day.today:not(.flatpickr-disabled) {
-    border-color: var(--primary-color);
-}
-
-body.dark-mode .flatpickr-day.selected,
-body.dark-mode .flatpickr-day.startRange,
-body.dark-mode .flatpickr-day.endRange {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-body.dark-mode .flatpickr-months .flatpickr-month {
-    color: #eee;
-}
-
-body.dark-mode .flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-month,
-body.dark-mode .flatpickr-current-month .flatpickr-numInputWrapper span {
-    color: #eee;
-}
-
-body.dark-mode .flatpickr-weekday {
-    color: #aaa;
-}
-
-body.dark-mode .flatpickr-prev-month svg,
-body.dark-mode .flatpickr-next-month svg {
-    fill: #eee;
-}
-
-body.dark-mode .flatpickr-day.has-diary:after {
-    color: var(--primary-color);
-}
-
-h1 {
-    text-align: center;
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    color: var(--primary-color);
+    border-top: 2px dashed var(--border-color);
 }
 
 .form-group {
@@ -221,10 +182,13 @@ input[type="date"],
 textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--text-color);
     border-radius: 6px;
     box-sizing: border-box;
     font-size: 1rem;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 textarea {
@@ -232,7 +196,12 @@ textarea {
     resize: vertical;
 }
 
-button {
+input::placeholder,
+textarea::placeholder {
+    color: var(--placeholder-color);
+}
+
+button[id="submit-btn"] {
     width: 100%;
     padding: 12px;
     background-color: var(--primary-color);
@@ -245,20 +214,21 @@ button {
     transition: background-color 0.3s;
 }
 
-button:hover {
+button[id="submit-btn"]:hover {
     background-color: #357abd;
 }
 
 button:disabled {
-    background-color: #ccc;
+    background-color: #555 !important;
+    color: #aaa !important;
     cursor: not-allowed;
 }
 
-/* Result Area Styles */
+/* 🟢 結果表示エリア */
 .result-area {
     margin-top: 2rem;
     padding-top: 2rem;
-    border-top: 2px dashed #eee;
+    border-top: 2px dashed var(--border-color);
     animation: fadeIn 0.5s ease-out;
 }
 
@@ -279,7 +249,8 @@ button:disabled {
 
 .result-section h3 {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.7;
     margin-bottom: 0.5rem;
 }
 
@@ -292,9 +263,10 @@ button:disabled {
 }
 
 .text-display.original {
-    background-color: #f9f9f9;
-    color: #777;
-    border-left: 4px solid #ddd;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    opacity: 0.8;
+    border-left: 4px solid var(--border-color);
 }
 
 .text-display.corrected {
@@ -302,6 +274,11 @@ button:disabled {
     color: #1976d2;
     border-left: 4px solid var(--primary-color);
     font-weight: 500;
+}
+
+body.dark-mode .text-display.corrected {
+    background-color: #1a237e;
+    color: #bbdefb;
 }
 
 .feedback-display {
@@ -314,14 +291,57 @@ button:disabled {
     white-space: pre-wrap;
 }
 
-.secondary-btn {
-    margin-top: 1rem;
-    background-color: #eee;
-    color: #666;
+body.dark-mode .feedback-display {
+    background-color: #3e2723;
+    color: #ffe0b2;
 }
 
-.secondary-btn:hover {
-    background-color: #ddd;
+.secondary-btn {
+    margin-top: 1rem;
+    background-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* 🟢 Flatpickr (カレンダー) のダークモード自動連動 */
+body.dark-mode .flatpickr-calendar {
+    background-color: #2c2c2c;
+    border-color: #444;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .flatpickr-day {
+    color: #e0e0e0;
+}
+
+body.dark-mode .flatpickr-day.nextMonthDay,
+body.dark-mode .flatpickr-day.prevMonthDay {
+    color: #555;
+}
+
+body.dark-mode .flatpickr-months .flatpickr-month,
+body.dark-mode .flatpickr-current-month .flatpickr-monthDropdown-months,
+body.dark-mode .flatpickr-current-month input.numInput {
+    color: #e0e0e0;
+    fill: #e0e0e0;
+}
+
+body.dark-mode .flatpickr-weekday {
+    color: #999;
+}
+
+.flatpickr-day.has-diary {
+    position: relative;
+}
+
+.flatpickr-day.has-diary:after {
+    content: ".";
+    color: var(--primary-color);
+    font-size: 3em;
+    line-height: 0.5;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 @keyframes fadeIn {
@@ -329,65 +349,33 @@ button:disabled {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Dark Mode Overrides for Result Area */
-body.dark-mode .result-area {
-    border-top-color: #444;
-}
-
-body.dark-mode .text-display.original {
-    background-color: #2a2a2a;
-    color: #aaa;
-    border-left-color: #555;
-}
-
-body.dark-mode .text-display.corrected {
-    background-color: #1a237e;
-    color: #bbdefb;
-    border-left-color: #4a90e2;
-}
-
-body.dark-mode .feedback-display {
-    background-color: #3e2723;
-    color: #ffe0b2;
-}
-
-body.dark-mode .secondary-btn {
-    background-color: #333;
-    color: #ccc;
-}
-
-body.dark-mode .secondary-btn:hover {
-    background-color: #444;
-}
-
-
 /* ==========================================
-   📱 スマートフォン・タブレット向けのレスポンシブ対応
+   📱 スマートフォン向けのレスポンシブ対応
    ========================================== */
 @media (max-width: 768px) {
-    /* 1. 全体の余白と外枠をスマホサイズに最適化 */
     body {
         padding: 10px;
-        align-items: flex-start; /* 上詰めで配置 */
-        min-height: auto;
     }
 
-    /* 2. 横並び(flex)から縦並び(column)へ変更 */
+    .dark-mode-toggle {
+        align-self: center; /* スマホでは中央配置 */
+        width: 100%;
+        max-width: none;
+    }
+
     .main-container {
         flex-direction: column;
         padding: 1rem;
         gap: 25px;
     }
 
-    /* 3. 各セクションの横幅を100%にしてリサイズ制限を解除 */
     .calendar-section, 
     .diary-detail-section {
         width: 100%;
-        min-width: 0; /* 横幅の縛りをリセット */
+        min-width: 0;
         flex: none;
     }
 
-    /* 4. カレンダー自体のサイズを画面幅いっぱいに広げる */
     .flatpickr-calendar,
     #calendar-container {
         width: 100% !important;
@@ -401,23 +389,5 @@ body.dark-mode .secondary-btn:hover {
     .dayContainer {
         width: 100% !important;
         max-width: 100% !important;
-    }
-
-    /* 5. 日記カード内の文字サイズをスマホ向けに微調整 */
-    .diary-card h3 {
-        font-size: 1rem;
-    }
-    
-    .diary-card p {
-        font-size: 0.9rem;
-    }
-
-    /* 6. ダークモード切り替えボタンの位置を押しやすい場所に調整 */
-    .dark-mode-toggle {
-        position: static; /* 画面固定をやめる */
-        display: block;
-        width: 100%;
-        margin-bottom: 15px;
-        text-align: center;
     }
 }

@@ -74,13 +74,3 @@ export async function fetchDiaries() {
         hideLoadingSpinner();
     }
 }
-
-document.addEventListener("DOMContentLoaded", async () => {
-    setupDarkModeToggle();
-    // 既存の日記投稿フォームのセットアップ
-    setupDiaryForm(); 
-
-    // 日記データを取得し、カレンダーをセットアップ
-    const diaries = await fetchDiaries();
-    setupCalendar(diaries);
-});

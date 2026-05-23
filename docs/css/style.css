@@ -5,15 +5,22 @@
     --text-color: #333;
     --border-color: #ddd;
     --placeholder-color: #aaa;
+
+    /* Dark Mode variables - default to light, overridden by dark-mode class */
+    --dark-bg-color: #1e1e1e;
+    --dark-card-bg: #2c2c2c;
+    --dark-text-color: #e0e0e0;
+    --dark-border-color: #444;
+    --dark-placeholder-color: #777;
 }
 
 /* 🟢 bodyにdark-modeがついたら、ここの変数の色に自動で切り替わる */
 body.dark-mode {
-    --bg-color: #1e1e1e;
-    --card-bg: #2c2c2c;
-    --text-color: #e0e0e0;
-    --border-color: #444;
-    --placeholder-color: #777;
+    --bg-color: var(--dark-bg-color);
+    --card-bg: var(--dark-card-bg);
+    --text-color: var(--dark-text-color);
+    --border-color: var(--dark-border-color);
+    --placeholder-color: var(--dark-placeholder-color);
 }
 
 body {
@@ -40,14 +47,21 @@ body {
     transition: background-color 0.3s;
 }
 
-body.dark-mode .main-container {
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
 .calendar-section {
     flex: 1;
     min-width: 300px;
 }
+
+/* Dark Mode for main-container (direct override, not using variables because it's a specific effect) */
+body.dark-mode .main-container {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .flatpickr-day.has-diary:after {
+    color: var(--primary-color);
+}
+
+
 
 .diary-detail-section {
     flex: 2;
@@ -227,6 +241,7 @@ button:disabled {
     color: #1976d2;
     border-left: 4px solid var(--primary-color);
     font-weight: 500;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 body.dark-mode .text-display.corrected {

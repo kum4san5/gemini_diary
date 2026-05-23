@@ -316,4 +316,4 @@ body.dark-mode .flatpickr-weekday { color: #999; }
     .calendar-section, .diary-detail-section { width: 100%; min-width: 0; flex: none; }
     .flatpickr-calendar, #calendar-container { width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
     .flatpickr-innerContainer, .flatpickr-rwd, .flatpickr-days, .dayContainer { width: 100% !important; max-width: 100% !important; }
-}
+} /* 👈 不要な閉じ括弧を削除して、ここで綺麗に終わらせます */

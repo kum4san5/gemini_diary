@@ -1,0 +1,10 @@
+
+# 1. 絶対にGitに入れたくない重いフォルダ
+node_modules/
+
+# 2. 【超重要】claspのログイン情報（これが漏れるとGASを乗っ取られる）
+.clasprc.json
+creds.json
+
+# (お好み) スクリプトIDもGitHubに載せたくない場合のみ、以下のコメントアウト(#)を消してください
+.clasp.json

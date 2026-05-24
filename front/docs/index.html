@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI English Diary</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components/spinner.css">
+    <link rel="stylesheet" href="css/components/dark-mode-toggle.css">
+</head>
+<body>
+    <!-- ... 既存のヘッダーやナビゲーションなど ... -->
+
+    <button class="dark-mode-toggle" id="darkModeToggle">ダークモードを切り替え</button>
+
+    <!-- ... 既存のメインコンテンツ ... -->
+    <main>
+        <div class="main-container">
+            <div class="calendar-section">
+                <h1>AI English Diary</h1>
+                <div id="calendar-container">
+                    <input type="text" id="flatpickr-calendar" placeholder="Select Date...">
+                </div>
+                <div class="form-container">
+                    <div class="form-group">
+                        <label for="date">日付</label>
+                        <input type="date" id="date">
+                    </div>
+        
+                    <div class="form-group">
+                        <label for="diary">今日の出来事（英語）</label>
+                        <textarea id="diary" placeholder="Today, I went to..."></textarea>
+                    </div>
+        
+                    <button id="submit-btn">AI先生に添削してもらう</button>
+        
+                    <div id="result-area" class="result-area hidden">
+                        <div class="result-card">
+                            <h2>AI先生の添削結果</h2>
+                            
+                            <div class="result-section">
+                                <h3>Original (あなたの文章)</h3>
+                                <p id="original-display" class="text-display original"></p>
+                            </div>
+        
+                            <div class="result-section">
+                                <h3>Corrected (修正案)</h3>
+                                <p id="corrected-display" class="text-display corrected"></p>
+                            </div>
+        
+                            <div class="result-section">
+                                <h3>Feedback (アドバイス)</h3>
+                                <div id="feedback-display" class="feedback-display"></div>
+                            </div>
+                            
+                            <button id="reset-btn" class="secondary-btn">新しく日記を書く</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="diary-detail-section">
+                <h2>選択された日付の日記</h2>
+                <div id="diary-detail-container" class="diary-detail-container">
+                    <p class="placeholder">日付を選択してください</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ローディングスピナーのHTMLを追加 -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- ... 既存のフッターなど ... -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -3,77 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI English Diary</title>
+    <title>Life Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/components/spinner.css">
     <link rel="stylesheet" href="css/components/dark-mode-toggle.css">
 </head>
 <body>
-    <!-- ... 既存のヘッダーやナビゲーションなど ... -->
+    <button class="dark-mode-toggle" id="darkModeToggle" type="button">Dark</button>
 
-    <button class="dark-mode-toggle" id="darkModeToggle">ダークモードを切り替え</button>
+    <main class="app-shell">
+        <header class="dashboard-header">
+            <div>
+                <p class="eyebrow">Personal OS</p>
+                <h1>Life Dashboard</h1>
+                <p class="header-copy">今日のTodo、応用情報の学習、積み上げを一箇所で確認します。</p>
+            </div>
+            <div class="header-actions" aria-label="クイック操作">
+                <a class="action-link" href="#quick-log">ログを書く</a>
+                <a class="action-link action-link-primary" href="#todo-board">今日のTodo</a>
+            </div>
+        </header>
 
-    <!-- ... 既存のメインコンテンツ ... -->
-    <main>
-        <div class="main-container">
-            <div class="calendar-section">
-                <h1>AI English Diary</h1>
-                <div id="calendar-container">
-                    <input type="text" id="flatpickr-calendar" placeholder="Select Date...">
+        <section class="metrics-grid" aria-label="学習サマリー">
+            <article class="metric-panel">
+                <span class="metric-label">今日の学習</span>
+                <strong id="today-minutes">0分</strong>
+                <span class="metric-note">時間を最優先で評価</span>
+            </article>
+            <article class="metric-panel">
+                <span class="metric-label">継続</span>
+                <strong id="streak-days">0日</strong>
+                <span class="metric-note">記録がある日をカウント</span>
+            </article>
+            <article class="metric-panel">
+                <span class="metric-label">完了Todo</span>
+                <strong id="completed-count">0件</strong>
+                <span class="metric-note">補助指標</span>
+            </article>
+            <article class="metric-panel accent">
+                <span class="metric-label">頑張りスコア</span>
+                <strong id="effort-score">0</strong>
+                <span class="metric-note">時間 + 継続 + 完了</span>
+            </article>
+        </section>
+
+        <section class="dashboard-grid">
+            <section class="panel todo-panel" id="todo-board" aria-labelledby="todo-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Action</p>
+                        <h2 id="todo-heading">今日のTodo</h2>
+                    </div>
+                    <span class="status-pill">応用情報</span>
+                </div>
+
+                <div id="task-list" class="task-list"></div>
+
+                <form id="task-form" class="compact-form">
+                    <label>
+                        Todo
+                        <input id="task-title" type="text" placeholder="例: 過去問道場 セキュリティ 30問">
+                    </label>
+                    <div class="form-row">
+                        <label>
+                            優先度
+                            <select id="task-priority">
+                                <option value="today">今日中</option>
+                                <option value="soon">なるべく早く</option>
+                                <option value="later">余裕があれば</option>
+                            </select>
+                        </label>
+                        <label>
+                            分類
+                            <select id="task-category">
+                                <option>過去問道場</option>
+                                <option>模擬試験</option>
+                                <option>苦手復習</option>
+                                <option>知識整理</option>
+                            </select>
+                        </label>
+                    </div>
+                    <button type="submit">Todoを追加</button>
+                </form>
+            </section>
+
+            <section class="panel progress-panel" aria-labelledby="progress-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Progress</p>
+                        <h2 id="progress-heading">学習度合い</h2>
+                    </div>
+                </div>
+                <div class="progress-ring" aria-label="頑張りスコア">
+                    <span id="score-ring-value">0</span>
+                    <small>score</small>
+                </div>
+                <div class="progress-bars">
+                    <div>
+                        <div class="bar-label"><span>学習時間</span><span id="minutes-bar-label">0 / 180</span></div>
+                        <div class="bar-track"><span id="minutes-bar"></span></div>
+                    </div>
+                    <div>
+                        <div class="bar-label"><span>継続</span><span id="streak-bar-label">0 / 14</span></div>
+                        <div class="bar-track"><span id="streak-bar"></span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel ai-panel" aria-labelledby="ai-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Secretary</p>
+                        <h2 id="ai-heading">AI秘書メモ</h2>
+                    </div>
+                </div>
+                <p id="ai-summary" class="ai-summary">今日はまず応用情報の小さな1セッションを作りましょう。30分でも記録すれば、ダッシュボードに積み上がります。</p>
+            </section>
+
+            <section class="panel shortcuts-panel" aria-labelledby="shortcut-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Launchpad</p>
+                        <h2 id="shortcut-heading">ショートカット</h2>
+                    </div>
+                </div>
+                <div id="shortcut-list" class="shortcut-list"></div>
+            </section>
+
+            <section class="panel log-panel" id="quick-log" aria-labelledby="log-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Capture</p>
+                        <h2 id="log-heading">学習ログ</h2>
+                    </div>
+                    <span class="status-pill">自動補完つき</span>
+                </div>
+                <form id="learning-log-form" class="compact-form">
+                    <div class="form-row">
+                        <label>
+                            実績時間
+                            <input id="log-minutes" type="number" min="1" step="1" placeholder="30">
+                        </label>
+                        <label>
+                            分類
+                            <select id="log-category">
+                                <option>過去問道場</option>
+                                <option>模擬試験</option>
+                                <option>苦手復習</option>
+                                <option>知識整理</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            出題ジャンル
+                            <select id="log-genre">
+                                <option>セキュリティ</option>
+                                <option>ネットワーク</option>
+                                <option>データベース</option>
+                                <option>マネジメント</option>
+                                <option>ストラテジ</option>
+                                <option>システム開発</option>
+                                <option>アルゴリズム</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                        <label>
+                            タグ
+                            <input id="log-tags" type="text" placeholder="午前問題, 復習">
+                        </label>
+                    </div>
+                    <label>
+                        メモ
+                        <textarea id="log-memo" placeholder="例: 過去問道場でネットワークを30問。サブネット計算が怪しい。"></textarea>
+                    </label>
+                    <button type="submit">ログを保存</button>
+                </form>
+                <div id="learning-log-list" class="log-list"></div>
+            </section>
+
+            <section class="panel diary-panel" aria-labelledby="diary-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">English</p>
+                        <h2 id="diary-heading">英語日記</h2>
+                    </div>
                 </div>
                 <div class="form-container">
                     <div class="form-group">
                         <label for="date">日付</label>
                         <input type="date" id="date">
                     </div>
-        
                     <div class="form-group">
-                        <label for="diary">今日の出来事（英語）</label>
-                        <textarea id="diary" placeholder="Today, I went to..."></textarea>
+                        <label for="diary">今日の出来事</label>
+                        <textarea id="diary" placeholder="Today, I studied..."></textarea>
                     </div>
-        
-                    <button id="submit-btn">AI先生に添削してもらう</button>
-        
+                    <button id="submit-btn" type="button">AI先生に添削してもらう</button>
                     <div id="result-area" class="result-area hidden">
                         <div class="result-card">
-                            <h2>AI先生の添削結果</h2>
-                            
+                            <h3>添削結果</h3>
                             <div class="result-section">
-                                <h3>Original (あなたの文章)</h3>
+                                <h4>Original</h4>
                                 <p id="original-display" class="text-display original"></p>
                             </div>
-        
                             <div class="result-section">
-                                <h3>Corrected (修正案)</h3>
+                                <h4>Corrected</h4>
                                 <p id="corrected-display" class="text-display corrected"></p>
                             </div>
-        
                             <div class="result-section">
-                                <h3>Feedback (アドバイス)</h3>
+                                <h4>Feedback</h4>
                                 <div id="feedback-display" class="feedback-display"></div>
                             </div>
-                            
-                            <button id="reset-btn" class="secondary-btn">新しく日記を書く</button>
+                            <button id="reset-btn" class="secondary-btn" type="button">新しく書く</button>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="diary-detail-section">
-                <h2>選択された日付の日記</h2>
-                <div id="diary-detail-container" class="diary-detail-container">
-                    <p class="placeholder">日付を選択してください</p>
+            </section>
+
+            <section class="panel history-panel" aria-labelledby="history-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Archive</p>
+                        <h2 id="history-heading">日記カレンダー</h2>
+                    </div>
                 </div>
-            </div>
-        </div>
+                <div id="calendar-container">
+                    <input type="text" id="flatpickr-calendar" placeholder="Select Date...">
+                </div>
+                <div id="diary-detail-container" class="diary-detail-container">
+                    <p class="placeholder">日付を選ぶと日記が表示されます。</p>
+                </div>
+            </section>
+        </section>
     </main>
 
-    <!-- ローディングスピナーのHTMLを追加 -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
     </div>
 
-    <!-- ... 既存のフッターなど ... -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script type="module" src="js/main.js"></script>
 </body>

@@ -8,7 +8,7 @@ const diaryResponse = [
   },
 ];
 
-describe("AI English Diary", () => {
+describe("Life Dashboard", () => {
   beforeEach(() => {
     cy.intercept("GET", "https://script.google.com/**?action=getDiaries", diaryResponse).as(
       "getDiaries"
@@ -30,10 +30,21 @@ describe("AI English Diary", () => {
   });
 
   it("loads the current GitHub Pages frontend", () => {
-    cy.contains("h1", "AI English Diary").should("be.visible");
+    cy.contains("h1", "Life Dashboard").should("be.visible");
+    cy.get("#todo-board").should("be.visible");
+    cy.get("#learning-log-form").should("be.visible");
     cy.get("#date").should("be.visible");
     cy.get("#diary").should("be.visible");
     cy.get("#submit-btn").should("be.visible");
+  });
+
+  it("adds a learning log and updates progress", () => {
+    cy.get("#log-minutes").type("30");
+    cy.get("#log-memo").type("過去問道場でネットワークを30問");
+    cy.get("#learning-log-form button").click();
+
+    cy.get("#today-minutes").should("contain", "30分");
+    cy.get("#learning-log-list").should("contain", "ネットワーク");
   });
 
   it("submits a diary and shows the correction result", () => {

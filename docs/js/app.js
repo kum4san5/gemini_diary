@@ -1,6 +1,6 @@
 import { GAS_WEB_APP_URL } from './config.js';
 
-let allDiaries = []; // 全日記データを保持する配列
+let allDiaries = [];
 
 function showLoadingSpinner() {
     document.getElementById('loading-overlay').classList.add('visible');
@@ -11,8 +11,8 @@ function hideLoadingSpinner() {
 }
 
 export function setupCalendar(diaries) {
-    const diaryDates = diaries.map(diary => diary.date);
-    
+    const diaryDates = diaries.map((diary) => diary.date);
+
     flatpickr("#flatpickr-calendar", {
         dateFormat: "Y-m-d",
         inline: true,
@@ -22,24 +22,24 @@ export function setupCalendar(diaries) {
                 dayElem.classList.add("has-diary");
             }
         },
-        onChange: (selectedDates, dateStr, instance) => {
+        onChange: (selectedDates, dateStr) => {
             displayDiariesForDate(dateStr);
-        }
+        },
     });
 }
 
 export function displayDiariesForDate(dateStr) {
     const diaryDetailContainer = document.getElementById("diary-detail-container");
-    diaryDetailContainer.innerHTML = ""; // クリア
+    diaryDetailContainer.innerHTML = "";
 
-    const diariesForSelectedDate = allDiaries.filter(diary => diary.date === dateStr);
+    const diariesForSelectedDate = allDiaries.filter((diary) => diary.date === dateStr);
 
     if (diariesForSelectedDate.length === 0) {
-        diaryDetailContainer.innerHTML = `<p class="placeholder">この日の日記はありません。</p>`;
+        diaryDetailContainer.innerHTML = `<p class="placeholder">この日の日記はまだありません。</p>`;
         return;
     }
 
-    diariesForSelectedDate.forEach(diary => {
+    diariesForSelectedDate.forEach((diary) => {
         const diaryCard = `
             <div class="diary-card">
                 <h3>${diary.text.substring(0, 50)}...</h3>
@@ -59,8 +59,7 @@ export async function fetchDiaries() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        allDiaries = data;
-        console.log("Fetched diaries:", allDiaries);
+        allDiaries = Array.isArray(data) ? data : [];
         return allDiaries;
     } catch (error) {
         console.error("Error fetching diaries:", error);

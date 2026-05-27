@@ -1,3 +1,5 @@
+import { GAS_WEB_APP_URL } from '../config.js';
+
 export function setupDiaryForm() {
     const dateInput = document.getElementById('date');
     const diaryInput = document.getElementById('diary');
@@ -29,9 +31,7 @@ export function setupDiaryForm() {
         resultArea.classList.add('hidden'); // 新しいリクエスト時は非表示にする
 
         try {
-            const API_URL = 'https://script.google.com/macros/s/AKfycbwZZZhJ7DlwtqTYxdO0sJMek6PZqoudFtX4JyxYa7HirFL7B4ILBBckccjLVxBzUNx5Zw/exec';
-            
-            const response = await fetch(API_URL, {
+            const response = await fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify({
                     date: date,

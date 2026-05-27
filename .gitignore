@@ -1,6 +1,11 @@
 
 # 1. 絶対にGitに入れたくない重いフォルダ
 node_modules/
+coverage/
+cypress/screenshots/
+cypress/videos/
+test/e2e/screenshots/
+test/e2e/videos/
 
 # 2. 【超重要】claspのログイン情報（これが漏れるとGASを乗っ取られる）
 .clasprc.json

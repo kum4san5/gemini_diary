@@ -21,4 +21,10 @@ describe("dashboard classification helpers", () => {
     expect(dashboardTestHooks.normalizeKnowledgeArea("学習")).toBe("応用情報");
     expect(dashboardTestHooks.normalizeKnowledgeArea("プログラミング")).toBe("開発");
   });
+
+  test("validates optional URLs", () => {
+    expect(dashboardTestHooks.isValidUrl("")).toBe(true);
+    expect(dashboardTestHooks.isValidUrl("https://example.com/article")).toBe(true);
+    expect(dashboardTestHooks.isValidUrl("not a url")).toBe(false);
+  });
 });

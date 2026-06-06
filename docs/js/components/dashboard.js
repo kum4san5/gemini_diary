@@ -366,6 +366,8 @@ function renderNotes(state) {
         if (actionFilter === "normal" && note.actionable) return false;
         return true;
     });
+    const count = document.getElementById("knowledge-count");
+    if (count) count.textContent = `${filtered.length}件のナレッジ`;
     const latest = filtered.slice(0, 12);
     list.innerHTML = latest.length
         ? latest.map((note) => {
@@ -510,6 +512,40 @@ function setSyncState(state, status, message) {
     state.syncStatus = status;
     state.syncMessage = message || "";
     renderSyncStatus(state);
+}
+
+function isValidUrl(value) {
+    if (!value) return true;
+    try {
+        new URL(value);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+function showValidation(state, message) {
+    setSyncState(state, "local", message);
+    alert(message);
+}
+
+function validateTaskInput(state, task) {
+    if (!task.title) return showValidation(state, "Todoタイトルは必須です。"), false;
+    if (task.estimatedMinutes < 0) return showValidation(state, "見積時間は0以上で入力してください。"), false;
+    if (!isValidUrl(task.link)) return showValidation(state, "リンクはURL形式で入力してください。"), false;
+    return true;
+}
+
+function validateLogInput(state, log) {
+    if (!log.minutes || log.minutes <= 0) return showValidation(state, "活動ログの実績時間は1分以上で入力してください。"), false;
+    return true;
+}
+
+function validateKnowledgeInput(state, note) {
+    if (!note.title && !note.summary && !note.body) return showValidation(state, "ナレッジはタイトル、要約、本文のどれかを入力してください。"), false;
+    if (!isValidUrl(note.sourceUrl)) return showValidation(state, "参照URLはURL形式で入力してください。"), false;
+    if (note.actionable && !note.actionText) return showValidation(state, "実行候補にする場合は実行メモを入力してください。"), false;
+    return true;
 }
 
 async function refreshFromNotion(state) {
@@ -842,6 +878,7 @@ async function saveEditedItem(state, form) {
             completedAt: completed ? (item.completedAt || new Date().toISOString()) : "",
         };
         action = "updateTask";
+        if (!validateTaskInput(state, payload)) return;
         Object.assign(item, payload);
     } else if (type === "log") {
         payload = {
@@ -857,6 +894,7 @@ async function saveEditedItem(state, form) {
             memo: String(formData.get("memo") || "").trim(),
         };
         action = "updateLearningLog";
+        if (!validateLogInput(state, payload)) return;
         Object.assign(item, payload);
     } else if (type === "note") {
         payload = {
@@ -873,6 +911,7 @@ async function saveEditedItem(state, form) {
             actionText: String(formData.get("actionText") || "").trim(),
         };
         action = "updateKnowledgeNote";
+        if (!validateKnowledgeInput(state, payload)) return;
         Object.assign(item, payload);
     }
 
@@ -936,6 +975,8 @@ function setupTaskForm(state) {
             status: "準備中",
             completed: false,
         };
+
+        if (!validateTaskInput(state, task)) return;
 
         state.tasks.unshift(task);
         form.reset();
@@ -1027,6 +1068,8 @@ function setupLearningLogForm(state) {
             memo: memoInput.value.trim(),
         };
 
+        if (!validateLogInput(state, log)) return;
+
         state.logs.unshift(log);
         form.reset();
         updateAreaOptions(areaInput, categoryInput, genreInput, "過去問道場", "セキュリティ");
@@ -1106,6 +1149,8 @@ function setupKnowledgeForm(state) {
             actionable: actionableInput.checked,
             actionText: actionTextInput.value.trim(),
         };
+
+        if (!validateKnowledgeInput(state, note)) return;
 
         state.notes.unshift(note);
         saveLocalState(state);
@@ -1295,4 +1340,5 @@ export const dashboardTestHooks = {
     inferGenre,
     inferKnowledgeCategory,
     normalizeKnowledgeArea,
+    isValidUrl,
 };

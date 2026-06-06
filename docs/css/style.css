@@ -515,6 +515,10 @@ button:disabled {
     font-weight: 800;
 }
 
+.shortcuts-panel .shortcut-card {
+    min-height: 74px;
+}
+
 .log-entry {
     padding: 13px;
     border: 1px solid var(--border-color);
@@ -579,6 +583,11 @@ button:disabled {
 
 .todo-panel {
     grid-row: span 2;
+}
+
+.next-action-panel {
+    border-color: color-mix(in srgb, var(--primary-color) 45%, var(--border-color));
+    background: color-mix(in srgb, var(--panel-bg) 86%, var(--primary-color));
 }
 
 .log-panel {
@@ -655,6 +664,13 @@ button:disabled {
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     background: var(--panel-soft);
+}
+
+.knowledge-count {
+    margin: -4px 0 12px;
+    color: var(--muted-color);
+    font-size: 0.85rem;
+    font-weight: 800;
 }
 
 #knowledge-form.collapsed {

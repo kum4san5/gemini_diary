@@ -57,6 +57,8 @@
             <button class="view-tab" type="button" data-view-tab="settings">Settings</button>
         </nav>
 
+        <div class="sync-banner" id="sync-banner" role="status">Notion同期を確認中</div>
+
         <section class="dashboard-grid">
             <section class="panel todo-panel" id="todo-board" aria-labelledby="todo-heading" data-view-panel="today">
                 <div class="panel-header">
@@ -159,6 +161,16 @@
                 <p id="ai-summary" class="ai-summary">今日はまだ小さな1セッションを作りましょう。5分でも記録すれば、ダッシュボードに積み上がります。</p>
             </section>
 
+            <section class="panel next-action-panel" aria-labelledby="next-action-heading" data-view-panel="today">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Next</p>
+                        <h2 id="next-action-heading">次の一手</h2>
+                    </div>
+                </div>
+                <p id="next-action-copy" class="ai-summary">未完了Todoから、今動かす候補を表示します。</p>
+            </section>
+
             <section class="panel shortcuts-panel" aria-labelledby="shortcut-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>
@@ -246,7 +258,7 @@
                         <p class="eyebrow">Knowledge</p>
                         <h2 id="knowledge-heading">ナレッジ</h2>
                     </div>
-                    <span class="status-pill">実行候補つき</span>
+                    <button class="item-action" id="knowledge-form-toggle" type="button">入力を開く</button>
                 </div>
                 <div class="knowledge-tools" aria-label="ナレッジ検索">
                     <label>
@@ -277,7 +289,7 @@
                         </label>
                     </div>
                 </div>
-                <form id="knowledge-form" class="compact-form">
+                <form id="knowledge-form" class="compact-form collapsed">
                     <label>
                         タイトル
                         <input id="knowledge-title" type="text" placeholder="例: サブネット計算は範囲を先に書く">

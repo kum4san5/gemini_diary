@@ -129,6 +129,10 @@ function setSelectOptions(select, options, selectedValue) {
     if (selectedValue && options.includes(selectedValue)) select.value = selectedValue;
 }
 
+function uniqueOptions(options, currentValue) {
+    return Array.from(new Set([...(options || []), currentValue].filter(Boolean)));
+}
+
 function updateAreaOptions(areaSelect, categorySelect, genreSelect, preferredCategory, preferredGenre) {
     const area = areaSelect.value || "その他";
     setSelectOptions(categorySelect, categoryByArea[area] || categoryByArea["その他"], preferredCategory);
@@ -309,18 +313,30 @@ function renderLogs(state) {
 
     const latest = state.logs.slice(0, 8);
     list.innerHTML = latest.length
-        ? latest.map((log) => {
-            const tags = Array.isArray(log.tags) ? log.tags.join(",") : log.tags;
-            return `
-                <article class="log-entry">
-                    <div class="log-entry-header">
-                        <strong>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
-                        <button class="item-action" type="button" data-detail-type="log" data-detail-id="${log.id}">詳細</button>
-                    </div>
-                    <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
-                </article>
-            `;
-        }).join("")
+        ? Object.entries(
+            latest.reduce((groups, log) => {
+                const key = normalizeDateKey(log.date) || "日付なし";
+                groups[key] = groups[key] || [];
+                groups[key].push(log);
+                return groups;
+            }, {})
+        ).map(([date, logs]) => `
+            <section class="log-date-group">
+                <h3>${escapeHtml(date)}</h3>
+                ${logs.map((log) => {
+                    const tags = Array.isArray(log.tags) ? log.tags.join(",") : log.tags;
+                    return `
+                        <article class="log-entry">
+                            <div class="log-entry-header">
+                                <strong>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
+                                <button class="item-action" type="button" data-detail-type="log" data-detail-id="${log.id}">詳細</button>
+                            </div>
+                            <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
+                        </article>
+                    `;
+                }).join("")}
+            </section>
+        `).join("")
         : `<p class="placeholder">まだ活動ログがありません。最初の1セッションを残しましょう。</p>`;
 }
 
@@ -400,10 +416,35 @@ function renderMetrics(state) {
     }
 }
 
+function renderNextAction(state) {
+    const target = document.getElementById("next-action-copy");
+    if (!target) return;
+
+    const nextTask = state.tasks.find((task) => !task.completed && task.priority === "今日中")
+        || state.tasks.find((task) => !task.completed)
+        || null;
+    const actionableNote = state.notes.find((note) => note.actionable && note.actionText);
+
+    if (nextTask) {
+        target.textContent = `まずは「${nextTask.title}」。完璧に終わらせるより、5分だけ着手で十分です。`;
+    } else if (actionableNote) {
+        target.textContent = `ナレッジの実行候補「${actionableNote.actionText}」をTodoにすると、次の行動に移せます。`;
+    } else {
+        target.textContent = "今すぐ動かす候補はありません。Todoか実行候補つきナレッジを1つ追加しましょう。";
+    }
+}
+
 function renderSyncStatus(state) {
     const pill = document.querySelector("#todo-board .panel-header > .status-pill");
-    if (!pill) return;
-    pill.textContent = state.syncStatus === "notion" ? "Notion同期" : "ローカル保存";
+    const banner = document.getElementById("sync-banner");
+    const synced = state.syncStatus === "notion";
+    const syncing = state.syncStatus === "syncing";
+    if (pill) pill.textContent = syncing ? "同期中" : synced ? "Notion同期" : "ローカル保存";
+    if (banner) {
+        banner.textContent = state.syncMessage || (syncing ? "Notionへ保存中..." : synced ? "Notionと同期済み" : "ローカル保存中。Notion接続に失敗した操作があるかもしれません。");
+        banner.classList.toggle("is-local", !synced && !syncing);
+        banner.classList.toggle("is-syncing", syncing);
+    }
 }
 
 function renderManagementLists(state) {
@@ -460,8 +501,15 @@ function render(state) {
     renderLogs(state);
     renderNotes(state);
     renderMetrics(state);
+    renderNextAction(state);
     renderSyncStatus(state);
     renderManagementLists(state);
+}
+
+function setSyncState(state, status, message) {
+    state.syncStatus = status;
+    state.syncMessage = message || "";
+    renderSyncStatus(state);
 }
 
 async function refreshFromNotion(state) {
@@ -472,11 +520,12 @@ async function refreshFromNotion(state) {
 }
 
 async function saveTaskToNotion(state, task) {
+    setSyncState(state, "syncing", "TodoをNotionへ保存中...");
     const result = await apiPost({ action: "saveTask", ...task });
     if (result.task) {
         const index = state.tasks.findIndex((item) => item.id === task.id);
         if (index !== -1) state.tasks[index] = result.task;
-        state.syncStatus = "notion";
+        setSyncState(state, "notion", "TodoをNotionへ保存しました。");
         saveLocalState(state);
         render(state);
     }
@@ -516,13 +565,14 @@ async function archiveItem(state, type, pageId) {
     render(state);
 
     try {
+        setSyncState(state, "syncing", "Notionでアーカイブ中...");
         await apiPost({ action: config.action, pageId });
-        state.syncStatus = "notion";
+        setSyncState(state, "notion", "Notionでアーカイブしました。");
         saveLocalState(state);
         render(state);
     } catch (error) {
         console.warn(`${config.action} failed`, error);
-        state.syncStatus = "local";
+        setSyncState(state, "local", "Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
         render(state);
         alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
     }
@@ -668,6 +718,8 @@ function checkboxValue(value) {
 
 function buildEditForm(type, item) {
     if (type === "task") {
+        const taskCategories = uniqueOptions(categoryByArea[item.area] || categoryByArea["その他"], item.category);
+        const taskGenres = uniqueOptions(genreByArea[item.area] || genreByArea["その他"], item.genre);
         return `
             <input type="hidden" name="type" value="task">
             <input type="hidden" name="id" value="${escapeHtml(item.id)}">
@@ -678,10 +730,10 @@ function buildEditForm(type, item) {
             </div>
             <div class="form-row">
                 <label>領域<select name="area" data-edit-area>${optionsHtml(["学習", "開発", "英語", "読書", "創作", "生活", "お金", "健康", "その他"], item.area || "学習")}</select></label>
-                <label>カテゴリ<input name="category" type="text" value="${escapeHtml(item.category)}"></label>
+                <label>カテゴリ<select name="category">${optionsHtml(taskCategories, item.category)}</select></label>
             </div>
             <div class="form-row">
-                <label>ジャンル<input name="genre" type="text" value="${escapeHtml(item.genre)}"></label>
+                <label>ジャンル<select name="genre">${optionsHtml(taskGenres, item.genre)}</select></label>
                 <label>見積時間<input name="estimatedMinutes" type="number" min="0" step="5" value="${escapeHtml(item.estimatedMinutes)}"></label>
             </div>
             <label>リンク<input name="link" type="url" value="${escapeHtml(item.link)}"></label>
@@ -695,6 +747,8 @@ function buildEditForm(type, item) {
     }
 
     if (type === "log") {
+        const logCategories = uniqueOptions(categoryByArea[item.area] || categoryByArea["その他"], item.category);
+        const logGenres = uniqueOptions(genreByArea[item.area] || genreByArea["その他"], item.genre);
         return `
             <input type="hidden" name="type" value="log">
             <input type="hidden" name="id" value="${escapeHtml(item.id)}">
@@ -704,10 +758,10 @@ function buildEditForm(type, item) {
             </div>
             <div class="form-row">
                 <label>領域<select name="area">${optionsHtml(["応用情報", "英語", "プログラミング", "読書", "創作", "生活", "健康", "お金", "その他"], item.area || "応用情報")}</select></label>
-                <label>カテゴリ<input name="category" type="text" value="${escapeHtml(item.category)}"></label>
+                <label>カテゴリ<select name="category">${optionsHtml(logCategories, item.category)}</select></label>
             </div>
             <div class="form-row">
-                <label>ジャンル<input name="genre" type="text" value="${escapeHtml(item.genre)}"></label>
+                <label>ジャンル<select name="genre">${optionsHtml(logGenres, item.genre)}</select></label>
                 <label>タグ<input name="tags" type="text" value="${escapeHtml(tagText(item.tags))}"></label>
             </div>
             <div class="form-row">
@@ -722,6 +776,7 @@ function buildEditForm(type, item) {
         `;
     }
 
+    const noteGenres = uniqueOptions(genreByArea[item.area] || genreByArea["その他"], item.genre);
     return `
         <input type="hidden" name="type" value="note">
         <input type="hidden" name="id" value="${escapeHtml(item.id)}">
@@ -731,7 +786,7 @@ function buildEditForm(type, item) {
             <label>カテゴリ<select name="category">${optionsHtml(["知識整理", "問題解説", "調査", "アイデア", "反省", "その他"], item.category || "知識整理")}</select></label>
         </div>
         <div class="form-row">
-            <label>ジャンル<input name="genre" type="text" value="${escapeHtml(item.genre)}"></label>
+            <label>ジャンル<select name="genre">${optionsHtml(noteGenres, item.genre)}</select></label>
             <label>タグ<input name="tags" type="text" value="${escapeHtml(tagText(item.tags))}"></label>
         </div>
         <label>参照URL<input name="sourceUrl" type="url" value="${escapeHtml(item.sourceUrl)}"></label>
@@ -825,18 +880,19 @@ async function saveEditedItem(state, form) {
     render(state);
 
     try {
+        setSyncState(state, "syncing", "Notionへ更新中...");
         const result = await apiPost({ action, ...payload });
         if (result.task) Object.assign(item, result.task);
         if (result.learningLog) Object.assign(item, result.learningLog);
         if (result.knowledgeNote) Object.assign(item, result.knowledgeNote);
-        state.syncStatus = "notion";
+        setSyncState(state, "notion", "Notionを更新しました。");
         saveLocalState(state);
         render(state);
         closeEditModal();
         openDetailModal(state, type, id);
     } catch (error) {
         console.warn(`${action} fallback to localStorage`, error);
-        state.syncStatus = "local";
+        setSyncState(state, "local", "Notionへの更新に失敗しました。ローカル表示だけ更新しました。");
         render(state);
         alert("Notionへの更新に失敗しました。ローカル表示だけ更新しました。");
     }
@@ -978,14 +1034,15 @@ function setupLearningLogForm(state) {
         render(state);
 
         try {
+            setSyncState(state, "syncing", "活動ログをNotionへ保存中...");
             const result = await apiPost({ action: "saveLearningLog", ...log });
             if (result.learningLog) state.logs[0] = result.learningLog;
-            state.syncStatus = "notion";
+            setSyncState(state, "notion", "活動ログをNotionへ保存しました。");
             saveLocalState(state);
             render(state);
         } catch (error) {
             console.warn("saveLearningLog fallback to localStorage", error);
-            state.syncStatus = "local";
+            setSyncState(state, "local", "活動ログはローカル保存です。Notion保存に失敗しました。");
             render(state);
         }
     });
@@ -995,6 +1052,7 @@ function setupKnowledgeForm(state) {
     const form = document.getElementById("knowledge-form");
     if (!form) return;
 
+    const toggleButton = document.getElementById("knowledge-form-toggle");
     const titleInput = document.getElementById("knowledge-title");
     const areaInput = document.getElementById("knowledge-area");
     const categoryInput = document.getElementById("knowledge-category");
@@ -1005,6 +1063,11 @@ function setupKnowledgeForm(state) {
     const actionTextInput = document.getElementById("knowledge-action-text");
 
     updateGenreOptions(areaInput, genreInput, "セキュリティ");
+
+    toggleButton?.addEventListener("click", () => {
+        const collapsed = form.classList.toggle("collapsed");
+        toggleButton.textContent = collapsed ? "入力を開く" : "入力を閉じる";
+    });
 
     function updateKnowledgeInferences() {
         const text = `${titleInput.value} ${summaryInput.value} ${bodyInput.value}`;
@@ -1049,17 +1112,20 @@ function setupKnowledgeForm(state) {
         render(state);
 
         try {
+            setSyncState(state, "syncing", "ナレッジをNotionへ保存中...");
             const result = await apiPost({ action: "saveKnowledgeNote", ...note });
             if (result.knowledgeNote) state.notes[0] = result.knowledgeNote;
 
-            state.syncStatus = "notion";
+            setSyncState(state, "notion", "ナレッジをNotionへ保存しました。");
             form.reset();
+            form.classList.add("collapsed");
+            if (toggleButton) toggleButton.textContent = "入力を開く";
             updateGenreOptions(areaInput, genreInput, "セキュリティ");
             saveLocalState(state);
             render(state);
         } catch (error) {
             console.warn("saveKnowledgeNote fallback to localStorage", error);
-            state.syncStatus = "local";
+            setSyncState(state, "local", "ナレッジはローカル保存です。Notion保存に失敗しました。");
             render(state);
         }
     });
@@ -1222,3 +1288,11 @@ export async function setupDashboard() {
         render(state);
     }
 }
+
+export const dashboardTestHooks = {
+    inferArea,
+    inferCategory,
+    inferGenre,
+    inferKnowledgeCategory,
+    normalizeKnowledgeArea,
+};

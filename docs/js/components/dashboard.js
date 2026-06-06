@@ -276,6 +276,7 @@ function renderTasks(state) {
                 <div class="task-main">
                     <input type="checkbox" data-task-toggle="${task.id}" ${task.completed ? "checked" : ""} aria-label="${task.title}を完了">
                     <p class="task-title ${task.completed ? "done" : ""}">${task.title}</p>
+                    <button class="item-action" type="button" data-detail-type="task" data-detail-id="${task.id}">詳細</button>
                 </div>
                 <div class="task-meta">
                     <span class="priority-pill">${task.priority || "今日中"}</span>
@@ -314,6 +315,7 @@ function renderLogs(state) {
                 <article class="log-entry">
                     <div class="log-entry-header">
                         <strong>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
+                        <button class="item-action" type="button" data-detail-type="log" data-detail-id="${log.id}">詳細</button>
                     </div>
                     <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
                 </article>
@@ -357,6 +359,7 @@ function renderNotes(state) {
                 <article class="note-entry">
                     <div class="log-entry-header">
                         <strong>${note.title || "Untitled Note"}</strong>
+                        <button class="item-action" type="button" data-detail-type="note" data-detail-id="${note.id}">詳細</button>
                     </div>
                     <div class="task-meta">
                         <span class="status-pill">${note.area || "応用情報"}</span>
@@ -365,6 +368,7 @@ function renderNotes(state) {
                         ${note.actionable ? `<span class="priority-pill">実行候補</span>` : ""}
                     </div>
                     <p>${note.summary || note.body || "本文なし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""} ${url}</p>
+                    ${note.actionable && note.actionText ? `<button class="item-action" type="button" data-note-create-task="${note.id}">Todoにする</button>` : ""}
                 </article>
             `;
         }).join("")
@@ -412,7 +416,10 @@ function renderManagementLists(state) {
             ? state.tasks.slice(0, 12).map((task) => `
                 <article class="management-item">
                     <span>${task.title || "Untitled Task"}</span>
-                    <button class="item-action danger-text" type="button" data-manage-archive="task" data-page-id="${task.id}">アーカイブ</button>
+                    <div class="management-actions">
+                        <button class="item-action" type="button" data-manage-edit="task" data-page-id="${task.id}">編集</button>
+                        <button class="item-action danger-text" type="button" data-manage-archive="task" data-page-id="${task.id}">アーカイブ</button>
+                    </div>
                 </article>
             `).join("")
             : `<p class="placeholder">管理対象のTodoはありません。</p>`;
@@ -423,7 +430,10 @@ function renderManagementLists(state) {
             ? state.logs.slice(0, 12).map((log) => `
                 <article class="management-item">
                     <span>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.memo || log.category || "ログ"}</span>
-                    <button class="item-action danger-text" type="button" data-manage-archive="log" data-page-id="${log.id}">アーカイブ</button>
+                    <div class="management-actions">
+                        <button class="item-action" type="button" data-manage-edit="log" data-page-id="${log.id}">編集</button>
+                        <button class="item-action danger-text" type="button" data-manage-archive="log" data-page-id="${log.id}">アーカイブ</button>
+                    </div>
                 </article>
             `).join("")
             : `<p class="placeholder">管理対象の活動ログはありません。</p>`;
@@ -434,7 +444,10 @@ function renderManagementLists(state) {
             ? state.notes.slice(0, 12).map((note) => `
                 <article class="management-item">
                     <span>${note.title || note.summary || "Untitled Note"}</span>
-                    <button class="item-action danger-text" type="button" data-manage-archive="note" data-page-id="${note.id}">アーカイブ</button>
+                    <div class="management-actions">
+                        <button class="item-action" type="button" data-manage-edit="note" data-page-id="${note.id}">編集</button>
+                        <button class="item-action danger-text" type="button" data-manage-archive="note" data-page-id="${note.id}">アーカイブ</button>
+                    </div>
                 </article>
             `).join("")
             : `<p class="placeholder">管理対象のナレッジはありません。</p>`;
@@ -512,6 +525,186 @@ async function archiveItem(state, type, pageId) {
         state.syncStatus = "local";
         render(state);
         alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
+    }
+}
+
+function findItem(state, type, id) {
+    if (type === "task") return state.tasks.find((item) => item.id === id);
+    if (type === "log") return state.logs.find((item) => item.id === id);
+    if (type === "note") return state.notes.find((item) => item.id === id);
+    return null;
+}
+
+function escapeHtml(value) {
+    return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function tagText(tags) {
+    return Array.isArray(tags) ? tags.join(", ") : String(tags || "");
+}
+
+function detailRows(rows) {
+    return rows
+        .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
+        .map(([label, value]) => `
+            <div class="detail-row">
+                <span>${escapeHtml(label)}</span>
+                <p>${escapeHtml(value)}</p>
+            </div>
+        `)
+        .join("");
+}
+
+function openDetailModal(state, type, id) {
+    const item = findItem(state, type, id);
+    const modal = document.getElementById("detail-modal");
+    if (!item || !modal) return;
+
+    const typeLabel = { task: "Todo", log: "活動ログ", note: "ナレッジ" }[type] || "Detail";
+    document.getElementById("detail-modal-type").textContent = typeLabel;
+    document.getElementById("detail-modal-title").textContent = item.title || item.memo || item.summary || "詳細";
+
+    const body = document.getElementById("detail-modal-body");
+    if (type === "task") {
+        body.innerHTML = detailRows([
+            ["ステータス", statusLabel(item)],
+            ["優先度", item.priority],
+            ["領域", item.area],
+            ["カテゴリ", item.category],
+            ["ジャンル", item.genre],
+            ["見積時間", item.estimatedMinutes ? `${item.estimatedMinutes}分` : ""],
+            ["実績時間", item.actualMinutes ? `${item.actualMinutes}分` : ""],
+            ["メモ", item.memo],
+            ["リンク", item.link],
+        ]);
+    } else if (type === "log") {
+        body.innerHTML = detailRows([
+            ["日付", item.date],
+            ["実績時間", item.minutes ? `${item.minutes}分` : ""],
+            ["領域", item.area],
+            ["カテゴリ", item.category],
+            ["ジャンル", item.genre],
+            ["理解度", item.understanding],
+            ["エネルギー", item.energy],
+            ["タグ", tagText(item.tags)],
+            ["メモ", item.memo],
+        ]);
+    } else {
+        body.innerHTML = detailRows([
+            ["領域", item.area],
+            ["カテゴリ", item.category],
+            ["ジャンル", item.genre],
+            ["タグ", tagText(item.tags)],
+            ["参照URL", item.sourceUrl],
+            ["要約", item.summary],
+            ["本文", item.body],
+            ["実行候補", item.actionable ? "はい" : "いいえ"],
+            ["実行メモ", item.actionText],
+        ]);
+    }
+
+    const actions = document.getElementById("detail-modal-actions");
+    actions.innerHTML = `
+        <button class="secondary-btn" type="button" data-manage-edit="${type}" data-page-id="${id}">編集</button>
+        ${type === "note" && item.actionable && item.actionText ? `<button type="button" data-note-create-task="${id}">Todoにする</button>` : ""}
+    `;
+
+    modal.classList.remove("hidden");
+}
+
+function closeDetailModal() {
+    document.getElementById("detail-modal")?.classList.add("hidden");
+}
+
+async function createTaskFromNote(state, noteId) {
+    const note = findItem(state, "note", noteId);
+    if (!note || !note.actionText) return;
+
+    const task = {
+        id: `task-${Date.now()}`,
+        title: note.actionText,
+        priority: "なるべく早く",
+        area: note.area === "応用情報" ? "学習" : note.area,
+        category: note.category === "問題解説" ? "苦手復習" : "知識整理",
+        genre: note.genre || "その他",
+        estimatedMinutes: 0,
+        memo: `ナレッジ由来: ${note.title || note.summary || ""}`,
+        link: note.sourceUrl || "",
+        status: "準備中",
+        completed: false,
+    };
+
+    state.tasks.unshift(task);
+    saveLocalState(state);
+    render(state);
+
+    try {
+        await saveTaskToNotion(state, task);
+        alert("Todoを作成しました。");
+    } catch (error) {
+        console.warn("createTaskFromNote fallback to localStorage", error);
+        state.syncStatus = "local";
+        render(state);
+        alert("NotionへのTodo作成に失敗しました。ローカルには追加しました。");
+    }
+}
+
+async function editItem(state, type, id) {
+    const item = findItem(state, type, id);
+    if (!item) return;
+
+    let payload = { pageId: id };
+    let action = "";
+    if (type === "task") {
+        const title = prompt("Todoタイトル", item.title || "");
+        if (title === null) return;
+        const memo = prompt("メモ", item.memo || "");
+        if (memo === null) return;
+        payload = { ...payload, title: title.trim(), memo: memo.trim() };
+        action = "updateTask";
+        Object.assign(item, payload);
+    } else if (type === "log") {
+        const minutes = prompt("実績時間（分）", String(item.minutes || 0));
+        if (minutes === null) return;
+        const memo = prompt("メモ", item.memo || "");
+        if (memo === null) return;
+        payload = { ...payload, minutes: Number(minutes || 0), memo: memo.trim() };
+        action = "updateLearningLog";
+        Object.assign(item, payload);
+    } else if (type === "note") {
+        const title = prompt("ナレッジタイトル", item.title || "");
+        if (title === null) return;
+        const summary = prompt("要約", item.summary || "");
+        if (summary === null) return;
+        const actionText = prompt("実行メモ", item.actionText || "");
+        if (actionText === null) return;
+        payload = { ...payload, title: title.trim(), summary: summary.trim(), actionText: actionText.trim(), actionable: Boolean(actionText.trim()) };
+        action = "updateKnowledgeNote";
+        Object.assign(item, payload);
+    }
+
+    saveLocalState(state);
+    render(state);
+
+    try {
+        const result = await apiPost({ action, ...payload });
+        if (result.task) Object.assign(item, result.task);
+        if (result.learningLog) Object.assign(item, result.learningLog);
+        if (result.knowledgeNote) Object.assign(item, result.knowledgeNote);
+        state.syncStatus = "notion";
+        saveLocalState(state);
+        render(state);
+        openDetailModal(state, type, id);
+    } catch (error) {
+        console.warn(`${action} fallback to localStorage`, error);
+        state.syncStatus = "local";
+        render(state);
+        alert("Notionへの更新に失敗しました。ローカル表示だけ更新しました。");
     }
 }
 
@@ -751,9 +944,42 @@ function setupKnowledgeFilters(state) {
 
 function setupManagementLists(state) {
     document.getElementById("settings-panel")?.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-manage-archive]");
-        if (!button) return;
-        archiveItem(state, button.dataset.manageArchive, button.dataset.pageId);
+        const archiveButton = event.target.closest("[data-manage-archive]");
+        if (archiveButton) {
+            archiveItem(state, archiveButton.dataset.manageArchive, archiveButton.dataset.pageId);
+            return;
+        }
+
+        const editButton = event.target.closest("[data-manage-edit]");
+        if (editButton) {
+            editItem(state, editButton.dataset.manageEdit, editButton.dataset.pageId);
+        }
+    });
+}
+
+function setupDetailInteractions(state) {
+    document.addEventListener("click", (event) => {
+        const detailButton = event.target.closest("[data-detail-type]");
+        if (detailButton) {
+            openDetailModal(state, detailButton.dataset.detailType, detailButton.dataset.detailId);
+            return;
+        }
+
+        const createTaskButton = event.target.closest("[data-note-create-task]");
+        if (createTaskButton) {
+            createTaskFromNote(state, createTaskButton.dataset.noteCreateTask);
+            return;
+        }
+
+        const editButton = event.target.closest("#detail-modal [data-manage-edit]");
+        if (editButton) {
+            editItem(state, editButton.dataset.manageEdit, editButton.dataset.pageId);
+            return;
+        }
+
+        if (event.target.closest("[data-detail-close]")) {
+            closeDetailModal();
+        }
     });
 }
 
@@ -829,6 +1055,7 @@ export async function setupDashboard() {
     setupKnowledgeForm(state);
     setupKnowledgeFilters(state);
     setupManagementLists(state);
+    setupDetailInteractions(state);
     setupSettings(state);
     setupViewTabs();
 

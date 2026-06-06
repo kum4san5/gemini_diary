@@ -609,6 +609,12 @@ button:disabled {
     white-space: nowrap;
 }
 
+.management-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
 .knowledge-tools {
     display: grid;
     gap: 10px;
@@ -617,6 +623,71 @@ button:disabled {
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     background: var(--panel-soft);
+}
+
+.detail-modal.hidden {
+    display: none;
+}
+
+.detail-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+
+.detail-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.48);
+}
+
+.detail-modal-panel {
+    position: relative;
+    z-index: 1;
+    width: min(720px, 100%);
+    max-height: min(760px, calc(100vh - 40px));
+    overflow: auto;
+    padding: 18px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-bg);
+    box-shadow: var(--shadow);
+}
+
+.detail-modal-body {
+    display: grid;
+    gap: 10px;
+}
+
+.detail-row {
+    display: grid;
+    gap: 5px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--panel-soft);
+}
+
+.detail-row span {
+    color: var(--muted-color);
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.detail-row p {
+    margin-bottom: 0;
+    line-height: 1.65;
+    white-space: pre-wrap;
+}
+
+.detail-modal-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
 }
 
 .inline-check {

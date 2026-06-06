@@ -426,6 +426,21 @@
         </section>
     </main>
 
+    <div class="detail-modal hidden" id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+        <div class="detail-modal-backdrop" data-detail-close></div>
+        <section class="detail-modal-panel">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow" id="detail-modal-type">Detail</p>
+                    <h2 id="detail-modal-title">詳細</h2>
+                </div>
+                <button class="item-action" type="button" data-detail-close>閉じる</button>
+            </div>
+            <div id="detail-modal-body" class="detail-modal-body"></div>
+            <div id="detail-modal-actions" class="detail-modal-actions"></div>
+        </section>
+    </div>
+
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
     </div>

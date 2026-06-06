@@ -621,6 +621,10 @@ function closeDetailModal() {
     document.getElementById("detail-modal")?.classList.add("hidden");
 }
 
+function closeEditModal() {
+    document.getElementById("edit-modal")?.classList.add("hidden");
+}
+
 async function createTaskFromNote(state, noteId) {
     const note = findItem(state, "note", noteId);
     if (!note || !note.actionText) return;
@@ -654,36 +658,165 @@ async function createTaskFromNote(state, noteId) {
     }
 }
 
-async function editItem(state, type, id) {
+function optionsHtml(options, selectedValue) {
+    return options.map((option) => `<option ${option === selectedValue ? "selected" : ""}>${escapeHtml(option)}</option>`).join("");
+}
+
+function checkboxValue(value) {
+    return value ? "checked" : "";
+}
+
+function buildEditForm(type, item) {
+    if (type === "task") {
+        return `
+            <input type="hidden" name="type" value="task">
+            <input type="hidden" name="id" value="${escapeHtml(item.id)}">
+            <label>タイトル<input name="title" type="text" value="${escapeHtml(item.title)}"></label>
+            <div class="form-row">
+                <label>ステータス<select name="status">${optionsHtml(["準備中", "未着手", "進行中", "完了", "保留", "スキップ"], item.status || "準備中")}</select></label>
+                <label>優先度<select name="priority">${optionsHtml(["今日中", "なるべく早く", "余裕があれば"], item.priority || "今日中")}</select></label>
+            </div>
+            <div class="form-row">
+                <label>領域<select name="area" data-edit-area>${optionsHtml(["学習", "開発", "英語", "読書", "創作", "生活", "お金", "健康", "その他"], item.area || "学習")}</select></label>
+                <label>カテゴリ<input name="category" type="text" value="${escapeHtml(item.category)}"></label>
+            </div>
+            <div class="form-row">
+                <label>ジャンル<input name="genre" type="text" value="${escapeHtml(item.genre)}"></label>
+                <label>見積時間<input name="estimatedMinutes" type="number" min="0" step="5" value="${escapeHtml(item.estimatedMinutes)}"></label>
+            </div>
+            <label>リンク<input name="link" type="url" value="${escapeHtml(item.link)}"></label>
+            <label>メモ<textarea name="memo">${escapeHtml(item.memo)}</textarea></label>
+            <label class="inline-check"><input name="completed" type="checkbox" ${checkboxValue(item.completed)}><span>完了</span></label>
+            <div class="edit-actions">
+                <button type="submit">保存</button>
+                <button class="secondary-btn" type="button" data-edit-close>キャンセル</button>
+            </div>
+        `;
+    }
+
+    if (type === "log") {
+        return `
+            <input type="hidden" name="type" value="log">
+            <input type="hidden" name="id" value="${escapeHtml(item.id)}">
+            <div class="form-row">
+                <label>日付<input name="date" type="date" value="${escapeHtml(normalizeDateKey(item.date))}"></label>
+                <label>実績時間<input name="minutes" type="number" min="1" step="1" value="${escapeHtml(item.minutes)}"></label>
+            </div>
+            <div class="form-row">
+                <label>領域<select name="area">${optionsHtml(["応用情報", "英語", "プログラミング", "読書", "創作", "生活", "健康", "お金", "その他"], item.area || "応用情報")}</select></label>
+                <label>カテゴリ<input name="category" type="text" value="${escapeHtml(item.category)}"></label>
+            </div>
+            <div class="form-row">
+                <label>ジャンル<input name="genre" type="text" value="${escapeHtml(item.genre)}"></label>
+                <label>タグ<input name="tags" type="text" value="${escapeHtml(tagText(item.tags))}"></label>
+            </div>
+            <div class="form-row">
+                <label>理解度<select name="understanding">${optionsHtml(["不明", "少し理解", "だいたい理解", "人に説明できる"], item.understanding || "不明")}</select></label>
+                <label>エネルギー<select name="energy">${optionsHtml(["普通", "低い", "高い"], item.energy || "普通")}</select></label>
+            </div>
+            <label>メモ<textarea name="memo">${escapeHtml(item.memo)}</textarea></label>
+            <div class="edit-actions">
+                <button type="submit">保存</button>
+                <button class="secondary-btn" type="button" data-edit-close>キャンセル</button>
+            </div>
+        `;
+    }
+
+    return `
+        <input type="hidden" name="type" value="note">
+        <input type="hidden" name="id" value="${escapeHtml(item.id)}">
+        <label>タイトル<input name="title" type="text" value="${escapeHtml(item.title)}"></label>
+        <div class="form-row">
+            <label>領域<select name="area">${optionsHtml(["応用情報", "英語", "開発", "読書", "創作", "生活", "その他"], item.area || "応用情報")}</select></label>
+            <label>カテゴリ<select name="category">${optionsHtml(["知識整理", "問題解説", "調査", "アイデア", "反省", "その他"], item.category || "知識整理")}</select></label>
+        </div>
+        <div class="form-row">
+            <label>ジャンル<input name="genre" type="text" value="${escapeHtml(item.genre)}"></label>
+            <label>タグ<input name="tags" type="text" value="${escapeHtml(tagText(item.tags))}"></label>
+        </div>
+        <label>参照URL<input name="sourceUrl" type="url" value="${escapeHtml(item.sourceUrl)}"></label>
+        <label>要約<textarea name="summary">${escapeHtml(item.summary)}</textarea></label>
+        <label>本文<textarea name="body">${escapeHtml(item.body)}</textarea></label>
+        <label class="inline-check"><input name="actionable" type="checkbox" ${checkboxValue(item.actionable)}><span>実行候補</span></label>
+        <label>実行メモ<input name="actionText" type="text" value="${escapeHtml(item.actionText)}"></label>
+        <div class="edit-actions">
+            <button type="submit">保存</button>
+            <button class="secondary-btn" type="button" data-edit-close>キャンセル</button>
+        </div>
+    `;
+}
+
+function editItem(state, type, id) {
+    const item = findItem(state, type, id);
+    if (!item) return;
+
+    const modal = document.getElementById("edit-modal");
+    const form = document.getElementById("edit-form");
+    if (!modal || !form) return;
+
+    const typeLabel = { task: "Todo", log: "活動ログ", note: "ナレッジ" }[type] || "Item";
+    document.getElementById("edit-modal-type").textContent = typeLabel;
+    document.getElementById("edit-modal-title").textContent = `${typeLabel}を編集`;
+    form.innerHTML = buildEditForm(type, item);
+    modal.classList.remove("hidden");
+}
+
+async function saveEditedItem(state, form) {
+    const formData = new FormData(form);
+    const type = formData.get("type");
+    const id = formData.get("id");
     const item = findItem(state, type, id);
     if (!item) return;
 
     let payload = { pageId: id };
     let action = "";
     if (type === "task") {
-        const title = prompt("Todoタイトル", item.title || "");
-        if (title === null) return;
-        const memo = prompt("メモ", item.memo || "");
-        if (memo === null) return;
-        payload = { ...payload, title: title.trim(), memo: memo.trim() };
+        const completed = formData.get("completed") === "on";
+        payload = {
+            ...payload,
+            title: String(formData.get("title") || "").trim(),
+            status: String(formData.get("status") || ""),
+            priority: String(formData.get("priority") || ""),
+            area: String(formData.get("area") || ""),
+            category: String(formData.get("category") || "").trim(),
+            genre: String(formData.get("genre") || "").trim(),
+            estimatedMinutes: Number(formData.get("estimatedMinutes") || 0),
+            memo: String(formData.get("memo") || "").trim(),
+            link: String(formData.get("link") || "").trim(),
+            completed,
+            completedAt: completed ? (item.completedAt || new Date().toISOString()) : "",
+        };
         action = "updateTask";
         Object.assign(item, payload);
     } else if (type === "log") {
-        const minutes = prompt("実績時間（分）", String(item.minutes || 0));
-        if (minutes === null) return;
-        const memo = prompt("メモ", item.memo || "");
-        if (memo === null) return;
-        payload = { ...payload, minutes: Number(minutes || 0), memo: memo.trim() };
+        payload = {
+            ...payload,
+            date: String(formData.get("date") || todayKey()),
+            minutes: Number(formData.get("minutes") || 0),
+            area: String(formData.get("area") || ""),
+            category: String(formData.get("category") || "").trim(),
+            genre: String(formData.get("genre") || "").trim(),
+            tags: String(formData.get("tags") || "").trim(),
+            understanding: String(formData.get("understanding") || ""),
+            energy: String(formData.get("energy") || ""),
+            memo: String(formData.get("memo") || "").trim(),
+        };
         action = "updateLearningLog";
         Object.assign(item, payload);
     } else if (type === "note") {
-        const title = prompt("ナレッジタイトル", item.title || "");
-        if (title === null) return;
-        const summary = prompt("要約", item.summary || "");
-        if (summary === null) return;
-        const actionText = prompt("実行メモ", item.actionText || "");
-        if (actionText === null) return;
-        payload = { ...payload, title: title.trim(), summary: summary.trim(), actionText: actionText.trim(), actionable: Boolean(actionText.trim()) };
+        payload = {
+            ...payload,
+            title: String(formData.get("title") || "").trim(),
+            area: String(formData.get("area") || ""),
+            category: String(formData.get("category") || ""),
+            genre: String(formData.get("genre") || "").trim(),
+            tags: String(formData.get("tags") || "").trim(),
+            sourceUrl: String(formData.get("sourceUrl") || "").trim(),
+            summary: String(formData.get("summary") || "").trim(),
+            body: String(formData.get("body") || "").trim(),
+            actionable: formData.get("actionable") === "on",
+            actionText: String(formData.get("actionText") || "").trim(),
+        };
         action = "updateKnowledgeNote";
         Object.assign(item, payload);
     }
@@ -699,6 +832,7 @@ async function editItem(state, type, id) {
         state.syncStatus = "notion";
         saveLocalState(state);
         render(state);
+        closeEditModal();
         openDetailModal(state, type, id);
     } catch (error) {
         console.warn(`${action} fallback to localStorage`, error);
@@ -979,6 +1113,27 @@ function setupDetailInteractions(state) {
 
         if (event.target.closest("[data-detail-close]")) {
             closeDetailModal();
+        }
+
+        if (event.target.closest("[data-edit-close]")) {
+            closeEditModal();
+        }
+    });
+
+    document.getElementById("edit-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const submitButton = event.target.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = "保存中...";
+        }
+        try {
+            await saveEditedItem(state, event.target);
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = "保存";
+            }
         }
     });
 }

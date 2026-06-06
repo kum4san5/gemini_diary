@@ -770,6 +770,7 @@ function setupSettings(state) {
 
 function setupViewTabs() {
     const tabs = Array.from(document.querySelectorAll("[data-view-tab]"));
+    const jumps = Array.from(document.querySelectorAll("[data-view-jump]"));
     const panels = Array.from(document.querySelectorAll("[data-view-panel]"));
     if (!tabs.length || !panels.length) return;
 
@@ -786,6 +787,12 @@ function setupViewTabs() {
 
     tabs.forEach((tab) => {
         tab.addEventListener("click", () => activateView(tab.dataset.viewTab));
+    });
+    jumps.forEach((jump) => {
+        jump.addEventListener("click", () => {
+            activateView(jump.dataset.viewJump);
+            document.querySelector(".view-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
     });
 
     activateView("today");

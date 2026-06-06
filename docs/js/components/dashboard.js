@@ -768,6 +768,29 @@ function setupSettings(state) {
     });
 }
 
+function setupViewTabs() {
+    const tabs = Array.from(document.querySelectorAll("[data-view-tab]"));
+    const panels = Array.from(document.querySelectorAll("[data-view-panel]"));
+    if (!tabs.length || !panels.length) return;
+
+    function activateView(view) {
+        tabs.forEach((tab) => {
+            const active = tab.dataset.viewTab === view;
+            tab.classList.toggle("active", active);
+            tab.setAttribute("aria-selected", String(active));
+        });
+        panels.forEach((panel) => {
+            panel.hidden = panel.dataset.viewPanel !== view;
+        });
+    }
+
+    tabs.forEach((tab) => {
+        tab.addEventListener("click", () => activateView(tab.dataset.viewTab));
+    });
+
+    activateView("today");
+}
+
 export async function setupDashboard() {
     const state = loadLocalState();
     render(state);
@@ -779,6 +802,7 @@ export async function setupDashboard() {
     setupKnowledgeList(state);
     setupKnowledgeFilters(state);
     setupSettings(state);
+    setupViewTabs();
 
     try {
         await refreshFromNotion(state);

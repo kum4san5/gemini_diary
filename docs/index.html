@@ -50,8 +50,15 @@
             </article>
         </section>
 
+        <nav class="view-tabs" aria-label="表示切り替え">
+            <button class="view-tab active" type="button" data-view-tab="today">Today</button>
+            <button class="view-tab" type="button" data-view-tab="knowledge">Knowledge</button>
+            <button class="view-tab" type="button" data-view-tab="logs">Logs</button>
+            <button class="view-tab" type="button" data-view-tab="settings">Settings</button>
+        </nav>
+
         <section class="dashboard-grid">
-            <section class="panel todo-panel" id="todo-board" aria-labelledby="todo-heading">
+            <section class="panel todo-panel" id="todo-board" aria-labelledby="todo-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Action</p>
@@ -119,7 +126,7 @@
                 </form>
             </section>
 
-            <section class="panel progress-panel" aria-labelledby="progress-heading">
+            <section class="panel progress-panel" aria-labelledby="progress-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Progress</p>
@@ -142,7 +149,7 @@
                 </div>
             </section>
 
-            <section class="panel ai-panel" aria-labelledby="ai-heading">
+            <section class="panel ai-panel" aria-labelledby="ai-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Secretary</p>
@@ -152,7 +159,7 @@
                 <p id="ai-summary" class="ai-summary">今日はまだ小さな1セッションを作りましょう。5分でも記録すれば、ダッシュボードに積み上がります。</p>
             </section>
 
-            <section class="panel shortcuts-panel" aria-labelledby="shortcut-heading">
+            <section class="panel shortcuts-panel" aria-labelledby="shortcut-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Launchpad</p>
@@ -162,7 +169,7 @@
                 <div id="shortcut-list" class="shortcut-list"></div>
             </section>
 
-            <section class="panel log-panel" id="quick-log" aria-labelledby="log-heading">
+            <section class="panel log-panel" id="quick-log" aria-labelledby="log-heading" data-view-panel="logs">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Capture</p>
@@ -233,7 +240,7 @@
                 <div id="learning-log-list" class="log-list"></div>
             </section>
 
-            <section class="panel knowledge-panel" id="knowledge-panel" aria-labelledby="knowledge-heading">
+            <section class="panel knowledge-panel" id="knowledge-panel" aria-labelledby="knowledge-heading" data-view-panel="knowledge">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Knowledge</p>
@@ -335,7 +342,7 @@
                 <div id="knowledge-list" class="note-list"></div>
             </section>
 
-            <section class="panel settings-panel" id="settings-panel" aria-labelledby="settings-heading">
+            <section class="panel settings-panel" id="settings-panel" aria-labelledby="settings-heading" data-view-panel="settings">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Settings</p>
@@ -350,7 +357,7 @@
                 </div>
             </section>
 
-            <section class="panel diary-panel" aria-labelledby="diary-heading">
+            <section class="panel diary-panel" aria-labelledby="diary-heading" data-view-panel="logs">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">English</p>
@@ -388,7 +395,7 @@
                 </div>
             </section>
 
-            <section class="panel history-panel" aria-labelledby="history-heading">
+            <section class="panel history-panel" aria-labelledby="history-heading" data-view-panel="logs">
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Archive</p>

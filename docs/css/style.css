@@ -146,6 +146,38 @@ h2 {
     margin-bottom: 16px;
 }
 
+.view-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--panel-bg) 88%, transparent);
+    box-shadow: var(--shadow);
+}
+
+.view-tab {
+    width: auto;
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted-color);
+}
+
+.view-tab:hover,
+.view-tab.active {
+    background: var(--primary-color);
+    color: #ffffff;
+    transform: none;
+}
+
+[hidden] {
+    display: none !important;
+}
+
 .metric-panel,
 .panel {
     border: 1px solid var(--border-color);

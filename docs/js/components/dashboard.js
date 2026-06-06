@@ -643,6 +643,7 @@ function render(state) {
     renderNextAction(state);
     renderSyncStatus(state);
     renderManagementLists(state);
+    populateRelationSelects(state);
 }
 
 function setSyncState(state, status, message) {
@@ -809,6 +810,99 @@ function tagText(tags) {
     return Array.isArray(tags) ? tags.join(", ") : String(tags || "");
 }
 
+function isRealPageId(id) {
+    return Boolean(id) && !/^(task|log|note|shortcut|project|goal|habit|weeklyReview|tag|category|aiInsight|resource|dashboardSetting|review)-/.test(String(id));
+}
+
+function relationOptionLabel(item, fallback = "Untitled") {
+    const title = item.title || item.memo || item.summary || fallback;
+    const meta = [item.area, item.category || item.type, item.status].filter(Boolean).join(" / ");
+    return meta ? `${title} (${meta})` : title;
+}
+
+function setRelationOptions(selectId, items, emptyLabel = "自動/未指定") {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const currentValue = select.value;
+    const options = (items || []).filter((item) => isRealPageId(item.id));
+    select.innerHTML = [
+        `<option value="">${escapeHtml(emptyLabel)}</option>`,
+        ...options.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(relationOptionLabel(item))}</option>`),
+    ].join("");
+    if (currentValue && options.some((item) => item.id === currentValue)) select.value = currentValue;
+}
+
+function populateRelationSelects(state) {
+    const extended = state.extended || {};
+    setRelationOptions("task-related-project", extended.projects || []);
+    setRelationOptions("task-related-goal", extended.goals || []);
+    setRelationOptions("task-related-resource", extended.resources || []);
+
+    setRelationOptions("log-related-task", state.tasks || []);
+    setRelationOptions("log-related-project", extended.projects || []);
+    setRelationOptions("log-related-goal", extended.goals || []);
+    setRelationOptions("log-related-resource", extended.resources || []);
+
+    setRelationOptions("knowledge-related-task", state.tasks || []);
+    setRelationOptions("knowledge-related-log", state.logs || []);
+    setRelationOptions("knowledge-related-project", extended.projects || []);
+    setRelationOptions("knowledge-related-goal", extended.goals || []);
+    setRelationOptions("knowledge-related-resource", extended.resources || []);
+
+    setRelationOptions("extended-related-project", extended.projects || []);
+    setRelationOptions("extended-related-goal", extended.goals || []);
+    setRelationOptions("extended-related-resource", extended.resources || []);
+}
+
+function wordsForRelation(value) {
+    return String(value || "")
+        .toLowerCase()
+        .split(/[\s,、。・/|:：()（）\[\]【】"'`]+/)
+        .map((word) => word.trim())
+        .filter((word) => word.length >= 2);
+}
+
+function inferRelatedId(items, text, area) {
+    const words = wordsForRelation(text);
+    if (!words.length && !area) return "";
+
+    let best = { id: "", score: 0 };
+    (items || []).filter((item) => isRealPageId(item.id)).forEach((item) => {
+        const target = [
+            item.title,
+            item.memo,
+            item.summary,
+            item.body,
+            item.area,
+            item.category,
+            item.genre,
+            item.type,
+            item.status,
+        ].join(" ").toLowerCase();
+        const wordScore = words.reduce((score, word) => score + (target.includes(word) ? 2 : 0), 0);
+        const areaScore = area && item.area === area ? 3 : 0;
+        const score = wordScore + areaScore;
+        if (score > best.score) best = { id: item.id, score };
+    });
+
+    return best.score >= 3 ? best.id : "";
+}
+
+function relationIdFromSelect(selectId) {
+    const id = document.getElementById(selectId)?.value || "";
+    return isRealPageId(id) ? id : "";
+}
+
+function relationIdsFromSelectOrInference(selectId, items, text, area) {
+    const selectedId = relationIdFromSelect(selectId);
+    const id = selectedId || inferRelatedId(items, text, area);
+    return id ? [id] : [];
+}
+
+function firstRelationId(selectId, items, text, area) {
+    return relationIdsFromSelectOrInference(selectId, items, text, area)[0] || "";
+}
+
 function detailRows(rows) {
     return rows
         .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "")
@@ -902,6 +996,10 @@ async function createTaskFromNote(state, noteId) {
         link: note.sourceUrl || "",
         status: "準備中",
         completed: false,
+        knowledgeNoteIds: isRealPageId(note.id) ? [note.id] : [],
+        projectIds: note.projectIds || [],
+        goalIds: note.goalIds || [],
+        resourceIds: note.resourceIds || [],
     };
 
     state.tasks.unshift(task);
@@ -1169,6 +1267,8 @@ function setupTaskForm(state) {
         event.preventDefault();
         const title = titleInput.value.trim();
         if (!title) return;
+        const memo = document.getElementById("task-memo").value.trim();
+        const relationText = `${title} ${memo}`;
 
         const task = {
             id: `task-${Date.now()}`,
@@ -1178,10 +1278,13 @@ function setupTaskForm(state) {
             category: categoryInput.value,
             genre: genreInput.value,
             estimatedMinutes: Number(document.getElementById("task-estimated-minutes").value || 0),
-            memo: document.getElementById("task-memo").value.trim(),
+            memo,
             link: document.getElementById("task-link").value.trim(),
             status: "準備中",
             completed: false,
+            projectIds: relationIdsFromSelectOrInference("task-related-project", state.extended?.projects || [], relationText, areaInput.value),
+            goalIds: relationIdsFromSelectOrInference("task-related-goal", state.extended?.goals || [], relationText, areaInput.value),
+            resourceIds: relationIdsFromSelectOrInference("task-related-resource", state.extended?.resources || [], relationText, areaInput.value),
         };
 
         if (!validateTaskInput(state, task)) return;
@@ -1262,6 +1365,8 @@ function setupLearningLogForm(state) {
         event.preventDefault();
         const minutes = Number(document.getElementById("log-minutes").value);
         if (!minutes) return;
+        const memo = memoInput.value.trim();
+        const relationText = `${areaInput.value} ${categoryInput.value} ${genreInput.value} ${memo}`;
 
         const log = {
             id: `log-${Date.now()}`,
@@ -1273,7 +1378,11 @@ function setupLearningLogForm(state) {
             understanding: document.getElementById("log-understanding").value,
             energy: document.getElementById("log-energy").value,
             tags: document.getElementById("log-tags").value.trim(),
-            memo: memoInput.value.trim(),
+            memo,
+            relatedTaskId: firstRelationId("log-related-task", state.tasks || [], relationText, areaInput.value),
+            projectIds: relationIdsFromSelectOrInference("log-related-project", state.extended?.projects || [], relationText, areaInput.value),
+            goalIds: relationIdsFromSelectOrInference("log-related-goal", state.extended?.goals || [], relationText, areaInput.value),
+            resourceIds: relationIdsFromSelectOrInference("log-related-resource", state.extended?.resources || [], relationText, areaInput.value),
         };
 
         if (!validateLogInput(state, log)) return;
@@ -1310,6 +1419,7 @@ function setupQuickLogForm(state) {
         const memo = document.getElementById("quick-log-memo").value.trim();
         const category = inferCategory(memo, area);
         const genre = inferGenre(memo, area);
+        const relationText = `${area} ${category} ${genre} ${memo}`;
         const log = {
             id: `log-${Date.now()}`,
             date: todayKey(),
@@ -1321,6 +1431,10 @@ function setupQuickLogForm(state) {
             energy: "普通",
             tags: "",
             memo,
+            relatedTaskId: inferRelatedId(state.tasks || [], relationText, area),
+            projectIds: relationIdsFromSelectOrInference("", state.extended?.projects || [], relationText, area),
+            goalIds: relationIdsFromSelectOrInference("", state.extended?.goals || [], relationText, area),
+            resourceIds: relationIdsFromSelectOrInference("", state.extended?.resources || [], relationText, area),
         };
 
         if (!validateLogInput(state, log)) return;
@@ -1390,6 +1504,7 @@ function setupKnowledgeForm(state) {
         const body = bodyInput.value.trim();
         const summary = summaryInput.value.trim();
         if (!title && !body && !summary) return;
+        const relationText = `${title} ${summary} ${body} ${actionTextInput.value.trim()}`;
 
         const note = {
             id: `note-${Date.now()}`,
@@ -1403,6 +1518,11 @@ function setupKnowledgeForm(state) {
             body,
             actionable: actionableInput.checked,
             actionText: actionTextInput.value.trim(),
+            relatedTaskId: firstRelationId("knowledge-related-task", state.tasks || [], relationText, areaInput.value),
+            relatedLogId: firstRelationId("knowledge-related-log", state.logs || [], relationText, areaInput.value),
+            projectIds: relationIdsFromSelectOrInference("knowledge-related-project", state.extended?.projects || [], relationText, areaInput.value),
+            goalIds: relationIdsFromSelectOrInference("knowledge-related-goal", state.extended?.goals || [], relationText, areaInput.value),
+            resourceIds: relationIdsFromSelectOrInference("knowledge-related-resource", state.extended?.resources || [], relationText, areaInput.value),
         };
 
         if (!validateKnowledgeInput(state, note)) return;
@@ -1647,8 +1767,12 @@ function buildExtendedPayload(state) {
     const memo = document.getElementById("extended-memo").value.trim();
     const metrics = calculateMetrics(state);
     const today = todayKey();
+    const relationText = `${title} ${area} ${typeText} ${url} ${memo}`;
+    const relatedProjectIds = relationIdsFromSelectOrInference("extended-related-project", state.extended?.projects || [], relationText, area);
+    const relatedGoalIds = relationIdsFromSelectOrInference("extended-related-goal", state.extended?.goals || [], relationText, area);
+    const relatedResourceIds = relationIdsFromSelectOrInference("extended-related-resource", state.extended?.resources || [], relationText, area);
 
-    const base = { id: `${type}-${Date.now()}`, title, area, memo, url };
+    const base = { id: `${type}-${Date.now()}`, title, area, memo, url, projectIds: relatedProjectIds, goalIds: relatedGoalIds, resourceIds: relatedResourceIds };
     if (type === "project") return { ...base, status: typeText || "構想中", priority: "中", githubUrl: url };
     if (type === "goal") return { ...base, status: typeText || "未着手", priority: "中", progress: 0, successCriteria: memo };
     if (type === "habit") return { ...base, status: "有効", frequency: typeText || "毎日", targetMinutes: 10 };

@@ -120,6 +120,20 @@
                             <input id="task-link" type="url" placeholder="https://...">
                         </label>
                     </div>
+                    <div class="form-row">
+                        <label>
+                            関連Project
+                            <select id="task-related-project"></select>
+                        </label>
+                        <label>
+                            関連Goal
+                            <select id="task-related-goal"></select>
+                        </label>
+                    </div>
+                    <label>
+                        関連Resource
+                        <select id="task-related-resource"></select>
+                    </label>
                     <label>
                         メモ
                         <textarea id="task-memo" placeholder="例: 先にNotion連携の動作確認をする"></textarea>
@@ -279,6 +293,26 @@
                         タグ
                         <input id="log-tags" type="text" placeholder="午前問題, 復習">
                     </label>
+                    <div class="form-row">
+                        <label>
+                            関連Todo
+                            <select id="log-related-task"></select>
+                        </label>
+                        <label>
+                            関連Project
+                            <select id="log-related-project"></select>
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            関連Goal
+                            <select id="log-related-goal"></select>
+                        </label>
+                        <label>
+                            関連Resource
+                            <select id="log-related-resource"></select>
+                        </label>
+                    </div>
                     <label>
                         メモ
                         <textarea id="log-memo" placeholder="例: 過去問道場でネットワークを20問。サブネット計算が怪しい。"></textarea>
@@ -439,6 +473,30 @@
                         実行メモ
                         <input id="knowledge-action-text" type="text" placeholder="例: サブネット計算を10問復習する">
                     </label>
+                    <div class="form-row">
+                        <label>
+                            関連Todo
+                            <select id="knowledge-related-task"></select>
+                        </label>
+                        <label>
+                            関連ログ
+                            <select id="knowledge-related-log"></select>
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            関連Project
+                            <select id="knowledge-related-project"></select>
+                        </label>
+                        <label>
+                            関連Goal
+                            <select id="knowledge-related-goal"></select>
+                        </label>
+                    </div>
+                    <label>
+                        関連Resource
+                        <select id="knowledge-related-resource"></select>
+                    </label>
                     <button type="submit">ナレッジを保存</button>
                 </form>
                 <div class="knowledge-workspace">
@@ -540,6 +598,20 @@
                     <label>
                         メモ
                         <textarea id="extended-memo" placeholder="補足、成功条件、次のアクションなど"></textarea>
+                    </label>
+                    <div class="form-row">
+                        <label>
+                            関連Project
+                            <select id="extended-related-project"></select>
+                        </label>
+                        <label>
+                            関連Goal
+                            <select id="extended-related-goal"></select>
+                        </label>
+                    </div>
+                    <label>
+                        関連Resource
+                        <select id="extended-related-resource"></select>
                     </label>
                     <button type="submit">追加</button>
                 </form>

@@ -1,3 +1,5 @@
+import { GAS_WEB_APP_URL } from "../config.js";
+
 const STORAGE_KEY = "lifeDashboardState";
 
 const defaultState = {
@@ -5,36 +7,28 @@ const defaultState = {
         {
             id: "task-1",
             title: "応用情報 過去問道場 セキュリティ 30問",
-            priority: "today",
+            priority: "今日中",
             category: "過去問道場",
             genre: "セキュリティ",
-            status: "preparing",
-            completed: false,
-        },
-        {
-            id: "task-2",
-            title: "模擬試験の復習メモを整理",
-            priority: "soon",
-            category: "模擬試験",
-            genre: "その他",
-            status: "todo",
+            status: "準備中",
             completed: false,
         },
     ],
     logs: [],
     shortcuts: [
         { title: "過去問道場", category: "応用情報", url: "https://www.ap-siken.com/apkakomon.php" },
-        { title: "Notion 学習DB", category: "Knowledge", url: "https://www.notion.so/" },
+        { title: "Notion", category: "Knowledge", url: "https://www.notion.so/" },
         { title: "IPA 試験情報", category: "Official", url: "https://www.ipa.go.jp/shiken/" },
         { title: "TED", category: "English", url: "https://www.ted.com/" },
     ],
+    syncStatus: "local",
 };
 
 function cloneDefaultState() {
     return JSON.parse(JSON.stringify(defaultState));
 }
 
-function loadState() {
+function loadLocalState() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (!stored) return cloneDefaultState();
@@ -45,33 +39,56 @@ function loadState() {
     }
 }
 
-function saveState(state) {
+function saveLocalState(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+async function apiGet(action) {
+    const response = await fetch(`${GAS_WEB_APP_URL}?action=${encodeURIComponent(action)}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (data && data.status === "error") throw new Error(data.message);
+    return data;
+}
+
+async function apiPost(payload) {
+    const response = await fetch(GAS_WEB_APP_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (data && data.status === "error") throw new Error(data.message);
+    return data;
+}
+
+async function loadRemoteState() {
+    const [tasks, logs, shortcuts] = await Promise.all([
+        apiGet("getTasks"),
+        apiGet("getLearningLogs"),
+        apiGet("getShortcuts"),
+    ]);
+
+    return {
+        tasks: Array.isArray(tasks) ? tasks : [],
+        logs: Array.isArray(logs) ? logs : [],
+        shortcuts: Array.isArray(shortcuts) && shortcuts.length ? shortcuts : defaultState.shortcuts,
+        syncStatus: "notion",
+    };
 }
 
 function todayKey() {
     return new Date().toISOString().split("T")[0];
 }
 
-function priorityLabel(priority) {
-    const labels = {
-        today: "今日中",
-        soon: "なるべく早く",
-        later: "余裕があれば",
-    };
-    return labels[priority] || priority;
+function normalizeDateKey(value) {
+    return value ? String(value).split("T")[0] : "";
 }
 
 function statusLabel(task) {
     if (task.completed) return "完了";
-    const labels = {
-        preparing: "準備中",
-        todo: "未着手",
-        doing: "進行中",
-        paused: "保留",
-        skipped: "スキップ",
-    };
-    return labels[task.status] || "未着手";
+    return task.status || "未着手";
 }
 
 function inferCategory(text) {
@@ -97,7 +114,7 @@ function inferGenre(text) {
 }
 
 function calculateStreak(logs) {
-    const dates = new Set(logs.map((log) => log.date));
+    const dates = new Set(logs.map((log) => normalizeDateKey(log.date)));
     let streak = 0;
     const cursor = new Date();
 
@@ -111,7 +128,7 @@ function calculateStreak(logs) {
 
 function calculateMetrics(state) {
     const today = todayKey();
-    const todayLogs = state.logs.filter((log) => log.date === today);
+    const todayLogs = state.logs.filter((log) => normalizeDateKey(log.date) === today);
     const todayMinutes = todayLogs.reduce((sum, log) => sum + Number(log.minutes || 0), 0);
     const completedCount = state.tasks.filter((task) => task.completed).length;
     const streak = calculateStreak(state.logs);
@@ -124,22 +141,24 @@ function renderTasks(state) {
     const list = document.getElementById("task-list");
     if (!list) return;
 
-    list.innerHTML = state.tasks
-        .map((task) => `
-            <article class="task-item">
-                <div class="task-main">
-                    <input type="checkbox" data-task-toggle="${task.id}" ${task.completed ? "checked" : ""} aria-label="${task.title}を完了">
-                    <p class="task-title ${task.completed ? "done" : ""}">${task.title}</p>
-                </div>
-                <div class="task-meta">
-                    <span class="priority-pill">${priorityLabel(task.priority)}</span>
-                    <span class="state-pill">${statusLabel(task)}</span>
-                    <span class="status-pill">${task.category}</span>
-                    <span class="status-pill">${task.genre}</span>
-                </div>
-            </article>
-        `)
-        .join("");
+    list.innerHTML = state.tasks.length
+        ? state.tasks
+            .map((task) => `
+                <article class="task-item">
+                    <div class="task-main">
+                        <input type="checkbox" data-task-toggle="${task.id}" ${task.completed ? "checked" : ""} aria-label="${task.title}を完了">
+                        <p class="task-title ${task.completed ? "done" : ""}">${task.title}</p>
+                    </div>
+                    <div class="task-meta">
+                        <span class="priority-pill">${task.priority || "今日中"}</span>
+                        <span class="state-pill">${statusLabel(task)}</span>
+                        <span class="status-pill">${task.category || "未分類"}</span>
+                        <span class="status-pill">${task.genre || "その他"}</span>
+                    </div>
+                </article>
+            `)
+            .join("")
+        : `<p class="placeholder">Todoはまだありません。今日の最初の一手を追加しましょう。</p>`;
 }
 
 function renderShortcuts(state) {
@@ -150,7 +169,7 @@ function renderShortcuts(state) {
         .map((shortcut) => `
             <a class="shortcut-card" href="${shortcut.url}" target="_blank" rel="noopener noreferrer">
                 <strong>${shortcut.title}</strong>
-                <span>${shortcut.category}</span>
+                <span>${shortcut.category || "Shortcut"}</span>
             </a>
         `)
         .join("");
@@ -163,12 +182,15 @@ function renderLogs(state) {
     const latest = state.logs.slice(0, 4);
     list.innerHTML = latest.length
         ? latest
-            .map((log) => `
-                <article class="log-entry">
-                    <strong>${log.minutes}分 / ${log.category} / ${log.genre}</strong>
-                    <p>${log.memo || "メモなし"}${log.tags ? ` #${log.tags.replaceAll(",", " #")}` : ""}</p>
-                </article>
-            `)
+            .map((log) => {
+                const tags = Array.isArray(log.tags) ? log.tags.join(",") : log.tags;
+                return `
+                    <article class="log-entry">
+                        <strong>${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
+                        <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
+                    </article>
+                `;
+            })
             .join("")
         : `<p class="placeholder">まだ学習ログがありません。最初の1セッションを残しましょう。</p>`;
 }
@@ -198,36 +220,59 @@ function renderMetrics(state) {
     }
 }
 
+function renderSyncStatus(state) {
+    const pill = document.querySelector("#todo-board .status-pill");
+    if (!pill) return;
+    pill.textContent = state.syncStatus === "notion" ? "Notion同期" : "ローカル保存";
+}
+
 function render(state) {
     renderTasks(state);
     renderShortcuts(state);
     renderLogs(state);
     renderMetrics(state);
+    renderSyncStatus(state);
 }
 
 function setupTaskForm(state) {
     const form = document.getElementById("task-form");
     if (!form) return;
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const titleInput = document.getElementById("task-title");
         const title = titleInput.value.trim();
         if (!title) return;
 
-        state.tasks.unshift({
+        const task = {
             id: `task-${Date.now()}`,
             title,
             priority: document.getElementById("task-priority").value,
+            area: "学習",
             category: document.getElementById("task-category").value,
             genre: inferGenre(title),
-            status: "preparing",
+            status: "準備中",
             completed: false,
-        });
+        };
 
+        state.tasks.unshift(task);
         titleInput.value = "";
-        saveState(state);
+        saveLocalState(state);
         render(state);
+
+        try {
+            const result = await apiPost({ action: "saveTask", ...task });
+            if (result.task) {
+                state.tasks[0] = result.task;
+                state.syncStatus = "notion";
+                saveLocalState(state);
+                render(state);
+            }
+        } catch (error) {
+            console.warn("saveTask fallback to localStorage", error);
+            state.syncStatus = "local";
+            render(state);
+        }
     });
 }
 
@@ -235,7 +280,7 @@ function setupTaskToggle(state) {
     const list = document.getElementById("task-list");
     if (!list) return;
 
-    list.addEventListener("change", (event) => {
+    list.addEventListener("change", async (event) => {
         const taskId = event.target.dataset.taskToggle;
         if (!taskId) return;
 
@@ -243,9 +288,28 @@ function setupTaskToggle(state) {
         if (!task) return;
 
         task.completed = event.target.checked;
-        task.status = task.completed ? "done" : "todo";
-        saveState(state);
+        task.status = task.completed ? "完了" : "未着手";
+        task.completedAt = task.completed ? new Date().toISOString() : "";
+        saveLocalState(state);
         render(state);
+
+        try {
+            const result = await apiPost({
+                action: "updateTask",
+                pageId: task.id,
+                completed: task.completed,
+                status: task.status,
+                completedAt: task.completedAt,
+            });
+            if (result.task) Object.assign(task, result.task);
+            state.syncStatus = "notion";
+            saveLocalState(state);
+            render(state);
+        } catch (error) {
+            console.warn("updateTask fallback to localStorage", error);
+            state.syncStatus = "local";
+            render(state);
+        }
     });
 }
 
@@ -260,31 +324,58 @@ function setupLearningLogForm(state) {
         document.getElementById("log-genre").value = inferGenre(memo);
     });
 
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const minutes = Number(document.getElementById("log-minutes").value);
         if (!minutes) return;
 
-        state.logs.unshift({
+        const log = {
             id: `log-${Date.now()}`,
             date: todayKey(),
             minutes,
+            area: "応用情報",
             category: document.getElementById("log-category").value,
             genre: document.getElementById("log-genre").value,
             tags: document.getElementById("log-tags").value.trim(),
             memo: memoInput.value.trim(),
-        });
+        };
 
+        state.logs.unshift(log);
         form.reset();
-        saveState(state);
+        saveLocalState(state);
         render(state);
+
+        try {
+            const result = await apiPost({ action: "saveLearningLog", ...log });
+            if (result.learningLog) {
+                state.logs[0] = result.learningLog;
+                state.syncStatus = "notion";
+                saveLocalState(state);
+                render(state);
+            }
+        } catch (error) {
+            console.warn("saveLearningLog fallback to localStorage", error);
+            state.syncStatus = "local";
+            render(state);
+        }
     });
 }
 
-export function setupDashboard() {
-    const state = loadState();
+export async function setupDashboard() {
+    const state = loadLocalState();
+    render(state);
     setupTaskForm(state);
     setupTaskToggle(state);
     setupLearningLogForm(state);
-    render(state);
+
+    try {
+        const remoteState = await loadRemoteState();
+        Object.assign(state, remoteState);
+        saveLocalState(state);
+        render(state);
+    } catch (error) {
+        console.warn("Dashboard uses localStorage fallback", error);
+        state.syncStatus = "local";
+        render(state);
+    }
 }

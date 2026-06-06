@@ -241,6 +241,35 @@
                     </div>
                     <span class="status-pill">実行候補つき</span>
                 </div>
+                <div class="knowledge-tools" aria-label="ナレッジ検索">
+                    <label>
+                        検索
+                        <input id="knowledge-search" type="search" placeholder="タイトル、要約、本文、タグで検索">
+                    </label>
+                    <div class="form-row">
+                        <label>
+                            領域で絞り込み
+                            <select id="knowledge-area-filter">
+                                <option value="">すべて</option>
+                                <option>応用情報</option>
+                                <option>英語</option>
+                                <option>開発</option>
+                                <option>読書</option>
+                                <option>創作</option>
+                                <option>生活</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                        <label>
+                            実行候補
+                            <select id="knowledge-action-filter">
+                                <option value="">すべて</option>
+                                <option value="actionable">実行候補のみ</option>
+                                <option value="normal">通常メモのみ</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
                 <form id="knowledge-form" class="compact-form">
                     <label>
                         タイトル

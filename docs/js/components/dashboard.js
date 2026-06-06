@@ -328,7 +328,29 @@ function renderNotes(state) {
     const list = document.getElementById("knowledge-list");
     if (!list) return;
 
-    const latest = state.notes.slice(0, 8);
+    const search = document.getElementById("knowledge-search")?.value.trim().toLowerCase() || "";
+    const areaFilter = document.getElementById("knowledge-area-filter")?.value || "";
+    const actionFilter = document.getElementById("knowledge-action-filter")?.value || "";
+    const filtered = state.notes.filter((note) => {
+        const tags = Array.isArray(note.tags) ? note.tags.join(",") : note.tags || "";
+        const haystack = [
+            note.title,
+            note.area,
+            note.category,
+            note.genre,
+            tags,
+            note.summary,
+            note.body,
+            note.actionText,
+        ].join(" ").toLowerCase();
+
+        if (search && !haystack.includes(search)) return false;
+        if (areaFilter && note.area !== areaFilter) return false;
+        if (actionFilter === "actionable" && !note.actionable) return false;
+        if (actionFilter === "normal" && note.actionable) return false;
+        return true;
+    });
+    const latest = filtered.slice(0, 12);
     list.innerHTML = latest.length
         ? latest.map((note) => {
             const tags = Array.isArray(note.tags) ? note.tags.join(",") : note.tags;
@@ -349,7 +371,7 @@ function renderNotes(state) {
                 </article>
             `;
         }).join("")
-        : `<p class="placeholder">まだナレッジがありません。読書メモやIT知識をここに残しましょう。</p>`;
+        : `<p class="placeholder">条件に合うナレッジがありません。検索条件を変えるか、新しいメモを残しましょう。</p>`;
 }
 
 function renderMetrics(state) {
@@ -709,6 +731,17 @@ function setupKnowledgeList(state) {
     });
 }
 
+function setupKnowledgeFilters(state) {
+    [
+        document.getElementById("knowledge-search"),
+        document.getElementById("knowledge-area-filter"),
+        document.getElementById("knowledge-action-filter"),
+    ].forEach((input) => {
+        input?.addEventListener("input", () => renderNotes(state));
+        input?.addEventListener("change", () => renderNotes(state));
+    });
+}
+
 function setupSettings(state) {
     const refreshButton = document.getElementById("refresh-dashboard-btn");
     const clearCacheButton = document.getElementById("clear-local-cache-btn");
@@ -744,6 +777,7 @@ export async function setupDashboard() {
     setupLearningLogList(state);
     setupKnowledgeForm(state);
     setupKnowledgeList(state);
+    setupKnowledgeFilters(state);
     setupSettings(state);
 
     try {

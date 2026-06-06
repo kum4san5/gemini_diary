@@ -492,7 +492,62 @@
                     </label>
                     <button type="submit">ショートカットを追加</button>
                 </form>
+                <form id="extended-db-form" class="compact-form settings-form">
+                    <h3>その他DBに追加</h3>
+                    <div class="form-row">
+                        <label>
+                            DB
+                            <select id="extended-db-type">
+                                <option value="project">Projects</option>
+                                <option value="goal">Goals</option>
+                                <option value="habit">Habits</option>
+                                <option value="weeklyReview">Weekly Reviews</option>
+                                <option value="tag">Tags</option>
+                                <option value="category">Categories</option>
+                                <option value="aiInsight">AI Insights</option>
+                                <option value="resource">Resources</option>
+                                <option value="dashboardSetting">Dashboard Settings</option>
+                            </select>
+                        </label>
+                        <label>
+                            名前
+                            <input id="extended-title" type="text" placeholder="名前">
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            領域
+                            <select id="extended-area">
+                                <option>学習</option>
+                                <option>開発</option>
+                                <option>英語</option>
+                                <option>創作</option>
+                                <option>生活</option>
+                                <option>お金</option>
+                                <option>健康</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                        <label>
+                            種別/状態
+                            <input id="extended-type-text" type="text" placeholder="例: 進行中 / Webサイト / Suggestion">
+                        </label>
+                    </div>
+                    <label>
+                        URL
+                        <input id="extended-url" type="url" placeholder="https://...">
+                    </label>
+                    <label>
+                        メモ
+                        <textarea id="extended-memo" placeholder="補足、成功条件、次のアクションなど"></textarea>
+                    </label>
+                    <button type="submit">追加</button>
+                </form>
                 <div class="management-lists" aria-label="データ管理">
+                    <section class="management-section">
+                        <h3>その他DB</h3>
+                        <div id="settings-extended-list" class="management-list"></div>
+                    </section>
                     <section class="management-section">
                         <h3>ショートカット</h3>
                         <div id="settings-shortcut-list" class="management-list"></div>

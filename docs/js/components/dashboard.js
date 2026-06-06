@@ -52,6 +52,17 @@ const defaultState = {
     logs: [],
     notes: [],
     reviews: [],
+    extended: {
+        projects: [],
+        goals: [],
+        habits: [],
+        weeklyReviews: [],
+        tags: [],
+        categories: [],
+        aiInsights: [],
+        resources: [],
+        dashboardSettings: [],
+    },
     shortcuts: [
         { title: "過去問道場", category: "応用情報", url: "https://www.ap-siken.com/apkakomon.php" },
         { title: "Notion", category: "Knowledge", url: "https://www.notion.so/" },
@@ -59,6 +70,18 @@ const defaultState = {
         { title: "TED", category: "English", url: "https://www.ted.com/" },
     ],
     syncStatus: "local",
+};
+
+const extendedDbConfig = {
+    project: { label: "Projects", stateKey: "projects", saveAction: "saveProject", archiveAction: "archiveProject" },
+    goal: { label: "Goals", stateKey: "goals", saveAction: "saveGoal", archiveAction: "archiveGoal" },
+    habit: { label: "Habits", stateKey: "habits", saveAction: "saveHabit", archiveAction: "archiveHabit" },
+    weeklyReview: { label: "Weekly Reviews", stateKey: "weeklyReviews", saveAction: "saveWeeklyReview", archiveAction: "archiveWeeklyReview" },
+    tag: { label: "Tags", stateKey: "tags", saveAction: "saveTag", archiveAction: "archiveTag" },
+    category: { label: "Categories", stateKey: "categories", saveAction: "saveCategory", archiveAction: "archiveCategory" },
+    aiInsight: { label: "AI Insights", stateKey: "aiInsights", saveAction: "saveAiInsight", archiveAction: "archiveAiInsight" },
+    resource: { label: "Resources", stateKey: "resources", saveAction: "saveResource", archiveAction: "archiveResource" },
+    dashboardSetting: { label: "Dashboard Settings", stateKey: "dashboardSettings", saveAction: "saveDashboardSetting", archiveAction: "archiveDashboardSetting" },
 };
 
 function cloneDefaultState() {
@@ -101,12 +124,21 @@ async function apiPost(payload) {
 }
 
 async function loadRemoteState() {
-    const [tasks, logs, notes, shortcuts, reviews] = await Promise.all([
+    const [tasks, logs, notes, shortcuts, reviews, projects, goals, habits, weeklyReviews, tags, categories, aiInsights, resources, dashboardSettings] = await Promise.all([
         apiGet("getTasks"),
         apiGet("getLearningLogs"),
         apiGet("getKnowledgeNotes"),
         apiGet("getShortcuts"),
         apiGet("getDailyReviews"),
+        apiGet("getProjects"),
+        apiGet("getGoals"),
+        apiGet("getHabits"),
+        apiGet("getWeeklyReviews"),
+        apiGet("getTags"),
+        apiGet("getCategories"),
+        apiGet("getAiInsights"),
+        apiGet("getResources"),
+        apiGet("getDashboardSettings"),
     ]);
 
     return {
@@ -114,6 +146,17 @@ async function loadRemoteState() {
         logs: Array.isArray(logs) ? logs : [],
         notes: Array.isArray(notes) ? notes : [],
         reviews: Array.isArray(reviews) ? reviews : [],
+        extended: {
+            projects: Array.isArray(projects) ? projects : [],
+            goals: Array.isArray(goals) ? goals : [],
+            habits: Array.isArray(habits) ? habits : [],
+            weeklyReviews: Array.isArray(weeklyReviews) ? weeklyReviews : [],
+            tags: Array.isArray(tags) ? tags : [],
+            categories: Array.isArray(categories) ? categories : [],
+            aiInsights: Array.isArray(aiInsights) ? aiInsights : [],
+            resources: Array.isArray(resources) ? resources : [],
+            dashboardSettings: Array.isArray(dashboardSettings) ? dashboardSettings : [],
+        },
         shortcuts: Array.isArray(shortcuts) && shortcuts.length ? shortcuts : defaultState.shortcuts,
         syncStatus: "notion",
     };
@@ -509,10 +552,28 @@ function renderSyncStatus(state) {
 }
 
 function renderManagementLists(state) {
+    const extendedList = document.getElementById("settings-extended-list");
     const shortcutList = document.getElementById("settings-shortcut-list");
     const taskList = document.getElementById("settings-task-list");
     const logList = document.getElementById("settings-log-list");
     const noteList = document.getElementById("settings-note-list");
+
+    if (extendedList) {
+        const items = Object.entries(extendedDbConfig).flatMap(([type, config]) => {
+            const records = state.extended?.[config.stateKey] || [];
+            return records.slice(0, 8).map((item) => ({ ...item, extendedType: type, dbLabel: config.label }));
+        });
+        extendedList.innerHTML = items.length
+            ? items.map((item) => `
+                <article class="management-item">
+                    <span>${item.dbLabel}: ${item.title || "Untitled"}</span>
+                    <div class="management-actions">
+                        <button class="item-action danger-text" type="button" data-extended-archive="${item.extendedType}" data-page-id="${item.id}">アーカイブ</button>
+                    </div>
+                </article>
+            `).join("")
+            : `<p class="placeholder">その他DBの管理対象はありません。</p>`;
+    }
 
     if (shortcutList) {
         shortcutList.innerHTML = state.shortcuts.length
@@ -1393,6 +1454,12 @@ function setupKnowledgeWorkspace(state) {
 
 function setupManagementLists(state) {
     document.getElementById("settings-panel")?.addEventListener("click", (event) => {
+        const extendedArchiveButton = event.target.closest("[data-extended-archive]");
+        if (extendedArchiveButton) {
+            archiveExtendedItem(state, extendedArchiveButton.dataset.extendedArchive, extendedArchiveButton.dataset.pageId);
+            return;
+        }
+
         const archiveButton = event.target.closest("[data-manage-archive]");
         if (archiveButton) {
             archiveItem(state, archiveButton.dataset.manageArchive, archiveButton.dataset.pageId);
@@ -1571,6 +1638,86 @@ function setupDailyReviewForm(state) {
     });
 }
 
+function buildExtendedPayload(state) {
+    const type = document.getElementById("extended-db-type").value;
+    const title = document.getElementById("extended-title").value.trim();
+    const area = document.getElementById("extended-area").value;
+    const typeText = document.getElementById("extended-type-text").value.trim();
+    const url = document.getElementById("extended-url").value.trim();
+    const memo = document.getElementById("extended-memo").value.trim();
+    const metrics = calculateMetrics(state);
+    const today = todayKey();
+
+    const base = { id: `${type}-${Date.now()}`, title, area, memo, url };
+    if (type === "project") return { ...base, status: typeText || "構想中", priority: "中", githubUrl: url };
+    if (type === "goal") return { ...base, status: typeText || "未着手", priority: "中", progress: 0, successCriteria: memo };
+    if (type === "habit") return { ...base, status: "有効", frequency: typeText || "毎日", targetMinutes: 10 };
+    if (type === "weeklyReview") return { ...base, weekStart: today, weekEnd: today, effortScore: metrics.score, studyMinutes: metrics.todayMinutes, completedTasks: metrics.completedCount, highlights: memo, nextActions: typeText };
+    if (type === "tag") return { ...base, color: typeText || "Default" };
+    if (type === "category") return { ...base, type: typeText || "Category", enabled: true };
+    if (type === "aiInsight") return { ...base, date: today, type: typeText || "Suggestion", summary: title, suggestion: memo, model: "manual" };
+    if (type === "resource") return { ...base, type: typeText || "Webサイト", category: "その他", tags: "" };
+    if (type === "dashboardSetting") return { ...base, key: title, value: memo, type: typeText || "General", enabled: true };
+    return base;
+}
+
+function setupExtendedDbForm(state) {
+    const form = document.getElementById("extended-db-form");
+    if (!form) return;
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const type = document.getElementById("extended-db-type").value;
+        const config = extendedDbConfig[type];
+        if (!config) return;
+
+        const payload = buildExtendedPayload(state);
+        if (!payload.title) return showValidation(state, "名前は必須です。");
+        if (payload.url && !isValidUrl(payload.url)) return showValidation(state, "URLはURL形式で入力してください。");
+
+        state.extended[config.stateKey].unshift(payload);
+        saveLocalState(state);
+        render(state);
+        form.reset();
+
+        try {
+            setSyncState(state, "syncing", `${config.label} をNotionへ保存中...`);
+            const result = await apiPost({ action: config.saveAction, ...payload });
+            const saved = result[type] || result[config.stateKey.replace(/s$/, "")] || Object.values(result).find((value) => value && value.id);
+            if (saved) state.extended[config.stateKey][0] = saved;
+            setSyncState(state, "notion", `${config.label} を保存しました。`);
+            saveLocalState(state);
+            render(state);
+            showToast(`${config.label} に追加しました。`, "success");
+        } catch (error) {
+            console.warn(`${config.saveAction} fallback to localStorage`, error);
+            setSyncState(state, "local", `${config.label} はローカル保存です。Notion保存に失敗しました。`);
+            render(state);
+        }
+    });
+}
+
+async function archiveExtendedItem(state, type, pageId) {
+    const config = extendedDbConfig[type];
+    if (!config || !pageId) return;
+    if (!confirm(`${config.label} の項目をNotion側でもアーカイブしますか？`)) return;
+
+    state.extended[config.stateKey] = state.extended[config.stateKey].filter((item) => item.id !== pageId);
+    saveLocalState(state);
+    render(state);
+
+    try {
+        setSyncState(state, "syncing", `${config.label} をアーカイブ中...`);
+        await apiPost({ action: config.archiveAction, pageId });
+        setSyncState(state, "notion", `${config.label} をアーカイブしました。`);
+        render(state);
+    } catch (error) {
+        console.warn(`${config.archiveAction} failed`, error);
+        setSyncState(state, "local", `${config.label} のNotionアーカイブに失敗しました。`);
+        render(state);
+    }
+}
+
 function setupViewTabs() {
     const tabs = Array.from(document.querySelectorAll("[data-view-tab]"));
     const jumps = Array.from(document.querySelectorAll("[data-view-jump]"));
@@ -1622,6 +1769,7 @@ export async function setupDashboard() {
     setupDetailInteractions(state);
     setupShortcutForm(state);
     setupDailyReviewForm(state);
+    setupExtendedDbForm(state);
     setupSettings(state);
     setupViewTabs();
 

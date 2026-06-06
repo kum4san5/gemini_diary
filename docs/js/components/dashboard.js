@@ -120,7 +120,20 @@ async function apiPost(payload) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     if (data && data.status === "error") throw new Error(data.message);
+    notifySchemaWarnings(data);
     return data;
+}
+
+function notifySchemaWarnings(data) {
+    const warnings = data?.schemaWarnings;
+    if (!Array.isArray(warnings) || !warnings.length) return;
+
+    const missing = warnings.flatMap((warning) => warning.missingProperties || []);
+    const uniqueMissing = Array.from(new Set(missing)).slice(0, 6);
+    const suffix = missing.length > uniqueMissing.length ? ` ほか${missing.length - uniqueMissing.length}件` : "";
+    const message = `Notion DBに存在しないプロパティがあり、保存対象から外しました: ${uniqueMissing.join(", ")}${suffix}`;
+    console.warn("Notion schema warnings", warnings);
+    showToast(message, "error");
 }
 
 async function loadRemoteState() {

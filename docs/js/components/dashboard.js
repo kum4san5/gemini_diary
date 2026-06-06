@@ -10,6 +10,8 @@ const defaultState = {
             priority: "今日中",
             category: "過去問道場",
             genre: "セキュリティ",
+            estimatedMinutes: 30,
+            memo: "",
             status: "準備中",
             completed: false,
         },
@@ -154,7 +156,9 @@ function renderTasks(state) {
                         <span class="state-pill">${statusLabel(task)}</span>
                         <span class="status-pill">${task.category || "未分類"}</span>
                         <span class="status-pill">${task.genre || "その他"}</span>
+                        ${task.estimatedMinutes ? `<span class="status-pill">見積 ${task.estimatedMinutes}分</span>` : ""}
                     </div>
+                    ${task.memo ? `<p class="task-memo">${task.memo}</p>` : ""}
                 </article>
             `)
             .join("")
@@ -221,7 +225,7 @@ function renderMetrics(state) {
 }
 
 function renderSyncStatus(state) {
-    const pill = document.querySelector("#todo-board .status-pill");
+    const pill = document.querySelector("#todo-board .panel-header > .status-pill");
     if (!pill) return;
     pill.textContent = state.syncStatus === "notion" ? "Notion同期" : "ローカル保存";
 }
@@ -238,9 +242,14 @@ function setupTaskForm(state) {
     const form = document.getElementById("task-form");
     if (!form) return;
 
+    const titleInput = document.getElementById("task-title");
+    const genreInput = document.getElementById("task-genre");
+    titleInput.addEventListener("input", () => {
+        genreInput.value = inferGenre(titleInput.value);
+    });
+
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const titleInput = document.getElementById("task-title");
         const title = titleInput.value.trim();
         if (!title) return;
 
@@ -249,14 +258,16 @@ function setupTaskForm(state) {
             title,
             priority: document.getElementById("task-priority").value,
             area: "学習",
-            category: document.getElementById("task-category").value,
-            genre: inferGenre(title),
+            category: document.getElementById("task-category").value || inferCategory(title),
+            genre: genreInput.value || inferGenre(title),
+            estimatedMinutes: Number(document.getElementById("task-estimated-minutes").value || 0),
+            memo: document.getElementById("task-memo").value.trim(),
             status: "準備中",
             completed: false,
         };
 
         state.tasks.unshift(task);
-        titleInput.value = "";
+        form.reset();
         saveLocalState(state);
         render(state);
 

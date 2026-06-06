@@ -69,9 +69,9 @@
                         <label>
                             優先度
                             <select id="task-priority">
-                                <option value="today">今日中</option>
-                                <option value="soon">なるべく早く</option>
-                                <option value="later">余裕があれば</option>
+                                <option>今日中</option>
+                                <option>なるべく早く</option>
+                                <option>余裕があれば</option>
                             </select>
                         </label>
                         <label>
@@ -84,6 +84,29 @@
                             </select>
                         </label>
                     </div>
+                    <div class="form-row">
+                        <label>
+                            出題ジャンル
+                            <select id="task-genre">
+                                <option>セキュリティ</option>
+                                <option>ネットワーク</option>
+                                <option>データベース</option>
+                                <option>マネジメント</option>
+                                <option>ストラテジ</option>
+                                <option>システム開発</option>
+                                <option>アルゴリズム</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                        <label>
+                            見積時間
+                            <input id="task-estimated-minutes" type="number" min="0" step="5" placeholder="30">
+                        </label>
+                    </div>
+                    <label>
+                        メモ
+                        <textarea id="task-memo" placeholder="例: サブネット計算を重点的に復習"></textarea>
+                    </label>
                     <button type="submit">Todoを追加</button>
                 </form>
             </section>

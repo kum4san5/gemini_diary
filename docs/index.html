@@ -17,10 +17,11 @@
             <div>
                 <p class="eyebrow">Personal OS</p>
                 <h1>Life Dashboard</h1>
-                <p class="header-copy">今日のTodo、活動ログ、ショートカット、日々の積み上げを一箇所で確認します。</p>
+                <p class="header-copy">今日のTodo、活動ログ、ナレッジ、ショートカット、日々の積み上げを一箇所で確認します。</p>
             </div>
             <div class="header-actions" aria-label="クイック操作">
                 <a class="action-link" href="#quick-log">ログを書く</a>
+                <a class="action-link" href="#knowledge-panel">ナレッジ</a>
                 <a class="action-link" href="#settings-panel">Settings</a>
                 <a class="action-link action-link-primary" href="#todo-board">今日のTodo</a>
             </div>
@@ -232,6 +233,79 @@
                 <div id="learning-log-list" class="log-list"></div>
             </section>
 
+            <section class="panel knowledge-panel" id="knowledge-panel" aria-labelledby="knowledge-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Knowledge</p>
+                        <h2 id="knowledge-heading">ナレッジ</h2>
+                    </div>
+                    <span class="status-pill">Todo化対応</span>
+                </div>
+                <form id="knowledge-form" class="compact-form">
+                    <label>
+                        タイトル
+                        <input id="knowledge-title" type="text" placeholder="例: サブネット計算は範囲を先に書く">
+                    </label>
+                    <div class="form-row">
+                        <label>
+                            領域
+                            <select id="knowledge-area">
+                                <option>応用情報</option>
+                                <option>英語</option>
+                                <option>開発</option>
+                                <option>読書</option>
+                                <option>創作</option>
+                                <option>生活</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                        <label>
+                            カテゴリ
+                            <select id="knowledge-category">
+                                <option>知識整理</option>
+                                <option>問題解説</option>
+                                <option>調査</option>
+                                <option>アイデア</option>
+                                <option>反省</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            ジャンル
+                            <select id="knowledge-genre"></select>
+                        </label>
+                        <label>
+                            参照URL
+                            <input id="knowledge-source-url" type="url" placeholder="https://...">
+                        </label>
+                    </div>
+                    <label>
+                        タグ
+                        <input id="knowledge-tags" type="text" placeholder="読書, ネットワーク, 要復習">
+                    </label>
+                    <label>
+                        要約
+                        <textarea id="knowledge-summary" placeholder="一言でいうと何を学んだか"></textarea>
+                    </label>
+                    <label>
+                        本文
+                        <textarea id="knowledge-body" placeholder="読書メモ、IT知識、気づき、引用しない範囲の自分の言葉など"></textarea>
+                    </label>
+                    <label class="inline-check">
+                        <input id="knowledge-actionable" type="checkbox">
+                        <span>実行に移せるのでTodo候補にする</span>
+                    </label>
+                    <label>
+                        Todo化する内容
+                        <input id="knowledge-action-text" type="text" placeholder="例: サブネット計算を10問復習する">
+                    </label>
+                    <button type="submit">ナレッジを保存</button>
+                </form>
+                <div id="knowledge-list" class="note-list"></div>
+            </section>
+
             <section class="panel settings-panel" id="settings-panel" aria-labelledby="settings-heading">
                 <div class="panel-header">
                     <div>
@@ -240,7 +314,7 @@
                     </div>
                     <span class="status-pill">アーカイブ対応</span>
                 </div>
-                <p class="placeholder">テストで追加したTodoや活動ログは、各カードのアーカイブボタンからNotion側でも非表示にできます。</p>
+                <p class="placeholder">テストで追加したTodo、活動ログ、ナレッジは各カードのアーカイブボタンからNotion側でも非表示にできます。</p>
                 <div class="settings-actions">
                     <button id="refresh-dashboard-btn" class="secondary-btn" type="button">Notionから再読み込み</button>
                     <button id="clear-local-cache-btn" class="danger-btn" type="button">ローカル表示キャッシュをクリア</button>

@@ -219,6 +219,7 @@ h2 {
 
 .task-list,
 .log-list,
+.note-list,
 .shortcut-list {
     display: grid;
     gap: 10px;
@@ -454,6 +455,15 @@ button:disabled {
     background: var(--panel-soft);
 }
 
+.note-entry {
+    display: grid;
+    gap: 10px;
+    padding: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-soft);
+}
+
 .log-entry strong {
     display: block;
     margin-bottom: 5px;
@@ -478,11 +488,26 @@ button:disabled {
     line-height: 1.6;
 }
 
+.note-entry p {
+    margin-bottom: 0;
+    color: var(--muted-color);
+    line-height: 1.6;
+}
+
+.note-entry a {
+    color: var(--primary-color);
+    font-weight: 800;
+}
+
 .todo-panel {
     grid-row: span 2;
 }
 
 .log-panel {
+    grid-column: span 2;
+}
+
+.knowledge-panel {
     grid-column: span 2;
 }
 
@@ -494,6 +519,19 @@ button:disabled {
     display: grid;
     gap: 10px;
     margin-top: 14px;
+}
+
+.inline-check {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--text-color);
+}
+
+.inline-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
 }
 
 .danger-btn {
@@ -682,6 +720,7 @@ body.dark-mode .flatpickr-weekday {
     .todo-panel,
     .log-panel,
     .settings-panel,
+    .knowledge-panel,
     .diary-panel,
     .history-panel {
         grid-column: span 1;

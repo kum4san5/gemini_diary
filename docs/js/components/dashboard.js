@@ -50,6 +50,7 @@ const defaultState = {
         },
     ],
     logs: [],
+    notes: [],
     shortcuts: [
         { title: "過去問道場", category: "応用情報", url: "https://www.ap-siken.com/apkakomon.php" },
         { title: "Notion", category: "Knowledge", url: "https://www.notion.so/" },
@@ -99,15 +100,17 @@ async function apiPost(payload) {
 }
 
 async function loadRemoteState() {
-    const [tasks, logs, shortcuts] = await Promise.all([
+    const [tasks, logs, notes, shortcuts] = await Promise.all([
         apiGet("getTasks"),
         apiGet("getLearningLogs"),
+        apiGet("getKnowledgeNotes"),
         apiGet("getShortcuts"),
     ]);
 
     return {
         tasks: Array.isArray(tasks) ? tasks : [],
         logs: Array.isArray(logs) ? logs : [],
+        notes: Array.isArray(notes) ? notes : [],
         shortcuts: Array.isArray(shortcuts) && shortcuts.length ? shortcuts : defaultState.shortcuts,
         syncStatus: "notion",
     };
@@ -123,14 +126,17 @@ function normalizeDateKey(value) {
 
 function setSelectOptions(select, options, selectedValue) {
     select.innerHTML = options.map((option) => `<option>${option}</option>`).join("");
-    if (selectedValue && options.includes(selectedValue)) {
-        select.value = selectedValue;
-    }
+    if (selectedValue && options.includes(selectedValue)) select.value = selectedValue;
 }
 
 function updateAreaOptions(areaSelect, categorySelect, genreSelect, preferredCategory, preferredGenre) {
     const area = areaSelect.value || "その他";
     setSelectOptions(categorySelect, categoryByArea[area] || categoryByArea["その他"], preferredCategory);
+    setSelectOptions(genreSelect, genreByArea[area] || genreByArea["その他"], preferredGenre);
+}
+
+function updateGenreOptions(areaSelect, genreSelect, preferredGenre) {
+    const area = areaSelect.value || "その他";
     setSelectOptions(genreSelect, genreByArea[area] || genreByArea["その他"], preferredGenre);
 }
 
@@ -181,6 +187,14 @@ function inferCategory(text, area) {
     return "過去問道場";
 }
 
+function inferKnowledgeCategory(text) {
+    if (/問題|解説|過去問/.test(text)) return "問題解説";
+    if (/調査|比較|確認/.test(text)) return "調査";
+    if (/アイデア|企画|思いつき/.test(text)) return "アイデア";
+    if (/反省|失敗|改善/.test(text)) return "反省";
+    return "知識整理";
+}
+
 function inferGenre(text, area) {
     const normalized = text.toLowerCase();
     if (area === "開発" || area === "プログラミング") {
@@ -219,6 +233,13 @@ function inferGenre(text, area) {
     return match ? match[0] : (genreByArea[area] || genreByArea["その他"])[0];
 }
 
+function normalizeKnowledgeArea(area) {
+    if (area === "学習") return "応用情報";
+    if (area === "プログラミング") return "開発";
+    if (area === "読書") return "その他";
+    return area;
+}
+
 function statusLabel(task) {
     if (task.completed) return "完了";
     return task.status || "未着手";
@@ -228,12 +249,10 @@ function calculateStreak(logs) {
     const dates = new Set(logs.map((log) => normalizeDateKey(log.date)));
     let streak = 0;
     const cursor = new Date();
-
     while (dates.has(cursor.toISOString().split("T")[0])) {
         streak += 1;
         cursor.setDate(cursor.getDate() - 1);
     }
-
     return streak;
 }
 
@@ -244,7 +263,6 @@ function calculateMetrics(state) {
     const completedCount = state.tasks.filter((task) => task.completed).length;
     const streak = calculateStreak(state.logs);
     const score = Math.min(todayMinutes, 180) + Math.min(streak * 5, 50) + completedCount * 5;
-
     return { todayMinutes, completedCount, streak, score };
 }
 
@@ -253,41 +271,36 @@ function renderTasks(state) {
     if (!list) return;
 
     list.innerHTML = state.tasks.length
-        ? state.tasks
-            .map((task) => `
-                <article class="task-item">
-                    <div class="task-main">
-                        <input type="checkbox" data-task-toggle="${task.id}" ${task.completed ? "checked" : ""} aria-label="${task.title}を完了">
-                        <p class="task-title ${task.completed ? "done" : ""}">${task.title}</p>
-                        <button class="item-action danger-text" type="button" data-task-archive="${task.id}">アーカイブ</button>
-                    </div>
-                    <div class="task-meta">
-                        <span class="priority-pill">${task.priority || "今日中"}</span>
-                        <span class="state-pill">${statusLabel(task)}</span>
-                        <span class="status-pill">${task.area || "学習"}</span>
-                        <span class="status-pill">${task.category || "未分類"}</span>
-                        <span class="status-pill">${task.genre || "その他"}</span>
-                        ${task.estimatedMinutes ? `<span class="status-pill">見積 ${task.estimatedMinutes}分</span>` : ""}
-                    </div>
-                    ${task.memo ? `<p class="task-memo">${task.memo}</p>` : ""}
-                </article>
-            `)
-            .join("")
+        ? state.tasks.map((task) => `
+            <article class="task-item">
+                <div class="task-main">
+                    <input type="checkbox" data-task-toggle="${task.id}" ${task.completed ? "checked" : ""} aria-label="${task.title}を完了">
+                    <p class="task-title ${task.completed ? "done" : ""}">${task.title}</p>
+                    <button class="item-action danger-text" type="button" data-task-archive="${task.id}">アーカイブ</button>
+                </div>
+                <div class="task-meta">
+                    <span class="priority-pill">${task.priority || "今日中"}</span>
+                    <span class="state-pill">${statusLabel(task)}</span>
+                    <span class="status-pill">${task.area || "学習"}</span>
+                    <span class="status-pill">${task.category || "未分類"}</span>
+                    <span class="status-pill">${task.genre || "その他"}</span>
+                    ${task.estimatedMinutes ? `<span class="status-pill">見積 ${task.estimatedMinutes}分</span>` : ""}
+                </div>
+                ${task.memo ? `<p class="task-memo">${task.memo}</p>` : ""}
+            </article>
+        `).join("")
         : `<p class="placeholder">Todoはまだありません。今日の最初の一手を追加しましょう。</p>`;
 }
 
 function renderShortcuts(state) {
     const list = document.getElementById("shortcut-list");
     if (!list) return;
-
-    list.innerHTML = state.shortcuts
-        .map((shortcut) => `
-            <a class="shortcut-card" href="${shortcut.url}" target="_blank" rel="noopener noreferrer">
-                <strong>${shortcut.title}</strong>
-                <span>${shortcut.category || "Shortcut"}</span>
-            </a>
-        `)
-        .join("");
+    list.innerHTML = state.shortcuts.map((shortcut) => `
+        <a class="shortcut-card" href="${shortcut.url}" target="_blank" rel="noopener noreferrer">
+            <strong>${shortcut.title}</strong>
+            <span>${shortcut.category || "Shortcut"}</span>
+        </a>
+    `).join("");
 }
 
 function renderLogs(state) {
@@ -296,21 +309,47 @@ function renderLogs(state) {
 
     const latest = state.logs.slice(0, 8);
     list.innerHTML = latest.length
-        ? latest
-            .map((log) => {
-                const tags = Array.isArray(log.tags) ? log.tags.join(",") : log.tags;
-                return `
-                    <article class="log-entry">
-                        <div class="log-entry-header">
-                            <strong>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
-                            <button class="item-action danger-text" type="button" data-log-archive="${log.id}">アーカイブ</button>
-                        </div>
-                        <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
-                    </article>
-                `;
-            })
-            .join("")
+        ? latest.map((log) => {
+            const tags = Array.isArray(log.tags) ? log.tags.join(",") : log.tags;
+            return `
+                <article class="log-entry">
+                    <div class="log-entry-header">
+                        <strong>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
+                        <button class="item-action danger-text" type="button" data-log-archive="${log.id}">アーカイブ</button>
+                    </div>
+                    <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
+                </article>
+            `;
+        }).join("")
         : `<p class="placeholder">まだ活動ログがありません。最初の1セッションを残しましょう。</p>`;
+}
+
+function renderNotes(state) {
+    const list = document.getElementById("knowledge-list");
+    if (!list) return;
+
+    const latest = state.notes.slice(0, 8);
+    list.innerHTML = latest.length
+        ? latest.map((note) => {
+            const tags = Array.isArray(note.tags) ? note.tags.join(",") : note.tags;
+            const url = note.sourceUrl ? `<a href="${note.sourceUrl}" target="_blank" rel="noopener noreferrer">参照</a>` : "";
+            return `
+                <article class="note-entry">
+                    <div class="log-entry-header">
+                        <strong>${note.title || "Untitled Note"}</strong>
+                        <button class="item-action danger-text" type="button" data-note-archive="${note.id}">アーカイブ</button>
+                    </div>
+                    <div class="task-meta">
+                        <span class="status-pill">${note.area || "応用情報"}</span>
+                        <span class="status-pill">${note.category || "知識整理"}</span>
+                        <span class="status-pill">${note.genre || "その他"}</span>
+                        ${note.actionable ? `<span class="priority-pill">Todo候補</span>` : ""}
+                    </div>
+                    <p>${note.summary || note.body || "本文なし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""} ${url}</p>
+                </article>
+            `;
+        }).join("")
+        : `<p class="placeholder">まだナレッジがありません。読書メモやIT知識をここに残しましょう。</p>`;
 }
 
 function renderMetrics(state) {
@@ -348,6 +387,7 @@ function render(state) {
     renderTasks(state);
     renderShortcuts(state);
     renderLogs(state);
+    renderNotes(state);
     renderMetrics(state);
     renderSyncStatus(state);
 }
@@ -357,6 +397,18 @@ async function refreshFromNotion(state) {
     Object.assign(state, remoteState);
     saveLocalState(state);
     render(state);
+}
+
+async function saveTaskToNotion(state, task) {
+    const result = await apiPost({ action: "saveTask", ...task });
+    if (result.task) {
+        const index = state.tasks.findIndex((item) => item.id === task.id);
+        if (index !== -1) state.tasks[index] = result.task;
+        state.syncStatus = "notion";
+        saveLocalState(state);
+        render(state);
+    }
+    return result.task;
 }
 
 function setupTaskForm(state) {
@@ -373,13 +425,7 @@ function setupTaskForm(state) {
     function updateTaskInferences() {
         const inferredArea = inferArea(titleInput.value);
         if (titleInput.value.trim()) areaInput.value = inferredArea;
-        updateAreaOptions(
-            areaInput,
-            categoryInput,
-            genreInput,
-            inferCategory(titleInput.value, areaInput.value),
-            inferGenre(titleInput.value, areaInput.value),
-        );
+        updateAreaOptions(areaInput, categoryInput, genreInput, inferCategory(titleInput.value, areaInput.value), inferGenre(titleInput.value, areaInput.value));
     }
 
     titleInput.addEventListener("input", updateTaskInferences);
@@ -411,13 +457,7 @@ function setupTaskForm(state) {
         render(state);
 
         try {
-            const result = await apiPost({ action: "saveTask", ...task });
-            if (result.task) {
-                state.tasks[0] = result.task;
-                state.syncStatus = "notion";
-                saveLocalState(state);
-                render(state);
-            }
+            await saveTaskToNotion(state, task);
         } catch (error) {
             console.warn("saveTask fallback to localStorage", error);
             state.syncStatus = "local";
@@ -500,13 +540,7 @@ function setupLearningLogForm(state) {
     memoInput.addEventListener("input", () => {
         const area = inferArea(memoInput.value);
         areaInput.value = area === "学習" ? "応用情報" : area === "開発" ? "プログラミング" : area;
-        updateAreaOptions(
-            areaInput,
-            categoryInput,
-            genreInput,
-            inferCategory(memoInput.value, areaInput.value),
-            inferGenre(memoInput.value, areaInput.value),
-        );
+        updateAreaOptions(areaInput, categoryInput, genreInput, inferCategory(memoInput.value, areaInput.value), inferGenre(memoInput.value, areaInput.value));
     });
 
     form.addEventListener("submit", async (event) => {
@@ -535,12 +569,10 @@ function setupLearningLogForm(state) {
 
         try {
             const result = await apiPost({ action: "saveLearningLog", ...log });
-            if (result.learningLog) {
-                state.logs[0] = result.learningLog;
-                state.syncStatus = "notion";
-                saveLocalState(state);
-                render(state);
-            }
+            if (result.learningLog) state.logs[0] = result.learningLog;
+            state.syncStatus = "notion";
+            saveLocalState(state);
+            render(state);
         } catch (error) {
             console.warn("saveLearningLog fallback to localStorage", error);
             state.syncStatus = "local";
@@ -569,6 +601,127 @@ function setupLearningLogList(state) {
             render(state);
         } catch (error) {
             console.warn("archiveLearningLog failed", error);
+            state.syncStatus = "local";
+            render(state);
+            alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
+        }
+    });
+}
+
+function setupKnowledgeForm(state) {
+    const form = document.getElementById("knowledge-form");
+    if (!form) return;
+
+    const titleInput = document.getElementById("knowledge-title");
+    const areaInput = document.getElementById("knowledge-area");
+    const categoryInput = document.getElementById("knowledge-category");
+    const genreInput = document.getElementById("knowledge-genre");
+    const summaryInput = document.getElementById("knowledge-summary");
+    const bodyInput = document.getElementById("knowledge-body");
+    const actionableInput = document.getElementById("knowledge-actionable");
+    const actionTextInput = document.getElementById("knowledge-action-text");
+
+    updateGenreOptions(areaInput, genreInput, "セキュリティ");
+
+    function updateKnowledgeInferences() {
+        const text = `${titleInput.value} ${summaryInput.value} ${bodyInput.value}`;
+        const inferredArea = normalizeKnowledgeArea(inferArea(text));
+        if (text.trim()) areaInput.value = inferredArea;
+        categoryInput.value = inferKnowledgeCategory(text);
+        updateGenreOptions(areaInput, genreInput, inferGenre(text, inferredArea));
+        if (actionableInput.checked && !actionTextInput.value.trim()) {
+            actionTextInput.value = titleInput.value.trim();
+        }
+    }
+
+    areaInput.addEventListener("change", () => updateGenreOptions(areaInput, genreInput));
+    [titleInput, summaryInput, bodyInput].forEach((input) => input.addEventListener("input", updateKnowledgeInferences));
+    actionableInput.addEventListener("change", () => {
+        if (actionableInput.checked && !actionTextInput.value.trim()) actionTextInput.value = titleInput.value.trim();
+    });
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = titleInput.value.trim();
+        const body = bodyInput.value.trim();
+        const summary = summaryInput.value.trim();
+        if (!title && !body && !summary) return;
+
+        const note = {
+            id: `note-${Date.now()}`,
+            title: title || summary.slice(0, 40) || "Untitled Note",
+            area: areaInput.value,
+            category: categoryInput.value,
+            genre: genreInput.value,
+            tags: document.getElementById("knowledge-tags").value.trim(),
+            sourceUrl: document.getElementById("knowledge-source-url").value.trim(),
+            summary,
+            body,
+            actionable: actionableInput.checked,
+            actionText: actionTextInput.value.trim(),
+        };
+
+        state.notes.unshift(note);
+        saveLocalState(state);
+        render(state);
+
+        try {
+            const result = await apiPost({ action: "saveKnowledgeNote", ...note });
+            if (result.knowledgeNote) state.notes[0] = result.knowledgeNote;
+
+            if (note.actionable && note.actionText) {
+                const task = {
+                    id: `task-${Date.now()}`,
+                    title: note.actionText,
+                    priority: "なるべく早く",
+                    area: note.area === "応用情報" ? "学習" : note.area,
+                    category: note.category === "問題解説" ? "苦手復習" : "知識整理",
+                    genre: note.genre,
+                    estimatedMinutes: 15,
+                    memo: `ナレッジ由来: ${note.title}`,
+                    link: note.sourceUrl,
+                    status: "準備中",
+                    completed: false,
+                };
+                state.tasks.unshift(task);
+                saveLocalState(state);
+                render(state);
+                await saveTaskToNotion(state, task);
+            }
+
+            state.syncStatus = "notion";
+            form.reset();
+            updateGenreOptions(areaInput, genreInput, "セキュリティ");
+            saveLocalState(state);
+            render(state);
+        } catch (error) {
+            console.warn("saveKnowledgeNote fallback to localStorage", error);
+            state.syncStatus = "local";
+            render(state);
+        }
+    });
+}
+
+function setupKnowledgeList(state) {
+    const list = document.getElementById("knowledge-list");
+    if (!list) return;
+
+    list.addEventListener("click", async (event) => {
+        const noteId = event.target.dataset.noteArchive;
+        if (!noteId) return;
+        if (!confirm("このナレッジをNotion側でもアーカイブしますか？")) return;
+
+        state.notes = state.notes.filter((note) => note.id !== noteId);
+        saveLocalState(state);
+        render(state);
+
+        try {
+            await apiPost({ action: "archiveKnowledgeNote", pageId: noteId });
+            state.syncStatus = "notion";
+            saveLocalState(state);
+            render(state);
+        } catch (error) {
+            console.warn("archiveKnowledgeNote failed", error);
             state.syncStatus = "local";
             render(state);
             alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
@@ -609,6 +762,8 @@ export async function setupDashboard() {
     setupTaskList(state);
     setupLearningLogForm(state);
     setupLearningLogList(state);
+    setupKnowledgeForm(state);
+    setupKnowledgeList(state);
     setupSettings(state);
 
     try {

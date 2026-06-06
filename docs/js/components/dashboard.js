@@ -343,7 +343,7 @@ function renderNotes(state) {
                         <span class="status-pill">${note.area || "応用情報"}</span>
                         <span class="status-pill">${note.category || "知識整理"}</span>
                         <span class="status-pill">${note.genre || "その他"}</span>
-                        ${note.actionable ? `<span class="priority-pill">Todo候補</span>` : ""}
+                        ${note.actionable ? `<span class="priority-pill">実行候補</span>` : ""}
                     </div>
                     <p>${note.summary || note.body || "本文なし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""} ${url}</p>
                 </article>
@@ -668,26 +668,6 @@ function setupKnowledgeForm(state) {
         try {
             const result = await apiPost({ action: "saveKnowledgeNote", ...note });
             if (result.knowledgeNote) state.notes[0] = result.knowledgeNote;
-
-            if (note.actionable && note.actionText) {
-                const task = {
-                    id: `task-${Date.now()}`,
-                    title: note.actionText,
-                    priority: "なるべく早く",
-                    area: note.area === "応用情報" ? "学習" : note.area,
-                    category: note.category === "問題解説" ? "苦手復習" : "知識整理",
-                    genre: note.genre,
-                    estimatedMinutes: 15,
-                    memo: `ナレッジ由来: ${note.title}`,
-                    link: note.sourceUrl,
-                    status: "準備中",
-                    completed: false,
-                };
-                state.tasks.unshift(task);
-                saveLocalState(state);
-                render(state);
-                await saveTaskToNotion(state, task);
-            }
 
             state.syncStatus = "notion";
             form.reset();

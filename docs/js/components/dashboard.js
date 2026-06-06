@@ -276,7 +276,6 @@ function renderTasks(state) {
                 <div class="task-main">
                     <input type="checkbox" data-task-toggle="${task.id}" ${task.completed ? "checked" : ""} aria-label="${task.title}を完了">
                     <p class="task-title ${task.completed ? "done" : ""}">${task.title}</p>
-                    <button class="item-action danger-text" type="button" data-task-archive="${task.id}">アーカイブ</button>
                 </div>
                 <div class="task-meta">
                     <span class="priority-pill">${task.priority || "今日中"}</span>
@@ -315,7 +314,6 @@ function renderLogs(state) {
                 <article class="log-entry">
                     <div class="log-entry-header">
                         <strong>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
-                        <button class="item-action danger-text" type="button" data-log-archive="${log.id}">アーカイブ</button>
                     </div>
                     <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
                 </article>
@@ -359,7 +357,6 @@ function renderNotes(state) {
                 <article class="note-entry">
                     <div class="log-entry-header">
                         <strong>${note.title || "Untitled Note"}</strong>
-                        <button class="item-action danger-text" type="button" data-note-archive="${note.id}">アーカイブ</button>
                     </div>
                     <div class="task-meta">
                         <span class="status-pill">${note.area || "応用情報"}</span>
@@ -405,6 +402,45 @@ function renderSyncStatus(state) {
     pill.textContent = state.syncStatus === "notion" ? "Notion同期" : "ローカル保存";
 }
 
+function renderManagementLists(state) {
+    const taskList = document.getElementById("settings-task-list");
+    const logList = document.getElementById("settings-log-list");
+    const noteList = document.getElementById("settings-note-list");
+
+    if (taskList) {
+        taskList.innerHTML = state.tasks.length
+            ? state.tasks.slice(0, 12).map((task) => `
+                <article class="management-item">
+                    <span>${task.title || "Untitled Task"}</span>
+                    <button class="item-action danger-text" type="button" data-manage-archive="task" data-page-id="${task.id}">アーカイブ</button>
+                </article>
+            `).join("")
+            : `<p class="placeholder">管理対象のTodoはありません。</p>`;
+    }
+
+    if (logList) {
+        logList.innerHTML = state.logs.length
+            ? state.logs.slice(0, 12).map((log) => `
+                <article class="management-item">
+                    <span>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.memo || log.category || "ログ"}</span>
+                    <button class="item-action danger-text" type="button" data-manage-archive="log" data-page-id="${log.id}">アーカイブ</button>
+                </article>
+            `).join("")
+            : `<p class="placeholder">管理対象の活動ログはありません。</p>`;
+    }
+
+    if (noteList) {
+        noteList.innerHTML = state.notes.length
+            ? state.notes.slice(0, 12).map((note) => `
+                <article class="management-item">
+                    <span>${note.title || note.summary || "Untitled Note"}</span>
+                    <button class="item-action danger-text" type="button" data-manage-archive="note" data-page-id="${note.id}">アーカイブ</button>
+                </article>
+            `).join("")
+            : `<p class="placeholder">管理対象のナレッジはありません。</p>`;
+    }
+}
+
 function render(state) {
     renderTasks(state);
     renderShortcuts(state);
@@ -412,6 +448,7 @@ function render(state) {
     renderNotes(state);
     renderMetrics(state);
     renderSyncStatus(state);
+    renderManagementLists(state);
 }
 
 async function refreshFromNotion(state) {
@@ -431,6 +468,51 @@ async function saveTaskToNotion(state, task) {
         render(state);
     }
     return result.task;
+}
+
+async function archiveItem(state, type, pageId) {
+    const config = {
+        task: {
+            confirmText: "このTodoをNotion側でもアーカイブしますか？",
+            action: "archiveTask",
+            remove: () => {
+                state.tasks = state.tasks.filter((task) => task.id !== pageId);
+            },
+        },
+        log: {
+            confirmText: "この活動ログをNotion側でもアーカイブしますか？",
+            action: "archiveLearningLog",
+            remove: () => {
+                state.logs = state.logs.filter((log) => log.id !== pageId);
+            },
+        },
+        note: {
+            confirmText: "このナレッジをNotion側でもアーカイブしますか？",
+            action: "archiveKnowledgeNote",
+            remove: () => {
+                state.notes = state.notes.filter((note) => note.id !== pageId);
+            },
+        },
+    }[type];
+
+    if (!config || !pageId) return;
+    if (!confirm(config.confirmText)) return;
+
+    config.remove();
+    saveLocalState(state);
+    render(state);
+
+    try {
+        await apiPost({ action: config.action, pageId });
+        state.syncStatus = "notion";
+        saveLocalState(state);
+        render(state);
+    } catch (error) {
+        console.warn(`${config.action} failed`, error);
+        state.syncStatus = "local";
+        render(state);
+        alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
+    }
 }
 
 function setupTaskForm(state) {
@@ -524,27 +606,6 @@ function setupTaskList(state) {
         }
     });
 
-    list.addEventListener("click", async (event) => {
-        const taskId = event.target.dataset.taskArchive;
-        if (!taskId) return;
-        if (!confirm("このTodoをNotion側でもアーカイブしますか？")) return;
-
-        state.tasks = state.tasks.filter((task) => task.id !== taskId);
-        saveLocalState(state);
-        render(state);
-
-        try {
-            await apiPost({ action: "archiveTask", pageId: taskId });
-            state.syncStatus = "notion";
-            saveLocalState(state);
-            render(state);
-        } catch (error) {
-            console.warn("archiveTask failed", error);
-            state.syncStatus = "local";
-            render(state);
-            alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
-        }
-    });
 }
 
 function setupLearningLogForm(state) {
@@ -599,33 +660,6 @@ function setupLearningLogForm(state) {
             console.warn("saveLearningLog fallback to localStorage", error);
             state.syncStatus = "local";
             render(state);
-        }
-    });
-}
-
-function setupLearningLogList(state) {
-    const list = document.getElementById("learning-log-list");
-    if (!list) return;
-
-    list.addEventListener("click", async (event) => {
-        const logId = event.target.dataset.logArchive;
-        if (!logId) return;
-        if (!confirm("この活動ログをNotion側でもアーカイブしますか？")) return;
-
-        state.logs = state.logs.filter((log) => log.id !== logId);
-        saveLocalState(state);
-        render(state);
-
-        try {
-            await apiPost({ action: "archiveLearningLog", pageId: logId });
-            state.syncStatus = "notion";
-            saveLocalState(state);
-            render(state);
-        } catch (error) {
-            console.warn("archiveLearningLog failed", error);
-            state.syncStatus = "local";
-            render(state);
-            alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
         }
     });
 }
@@ -704,33 +738,6 @@ function setupKnowledgeForm(state) {
     });
 }
 
-function setupKnowledgeList(state) {
-    const list = document.getElementById("knowledge-list");
-    if (!list) return;
-
-    list.addEventListener("click", async (event) => {
-        const noteId = event.target.dataset.noteArchive;
-        if (!noteId) return;
-        if (!confirm("このナレッジをNotion側でもアーカイブしますか？")) return;
-
-        state.notes = state.notes.filter((note) => note.id !== noteId);
-        saveLocalState(state);
-        render(state);
-
-        try {
-            await apiPost({ action: "archiveKnowledgeNote", pageId: noteId });
-            state.syncStatus = "notion";
-            saveLocalState(state);
-            render(state);
-        } catch (error) {
-            console.warn("archiveKnowledgeNote failed", error);
-            state.syncStatus = "local";
-            render(state);
-            alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
-        }
-    });
-}
-
 function setupKnowledgeFilters(state) {
     [
         document.getElementById("knowledge-search"),
@@ -739,6 +746,14 @@ function setupKnowledgeFilters(state) {
     ].forEach((input) => {
         input?.addEventListener("input", () => renderNotes(state));
         input?.addEventListener("change", () => renderNotes(state));
+    });
+}
+
+function setupManagementLists(state) {
+    document.getElementById("settings-panel")?.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-manage-archive]");
+        if (!button) return;
+        archiveItem(state, button.dataset.manageArchive, button.dataset.pageId);
     });
 }
 
@@ -811,10 +826,9 @@ export async function setupDashboard() {
     setupTaskForm(state);
     setupTaskList(state);
     setupLearningLogForm(state);
-    setupLearningLogList(state);
     setupKnowledgeForm(state);
-    setupKnowledgeList(state);
     setupKnowledgeFilters(state);
+    setupManagementLists(state);
     setupSettings(state);
     setupViewTabs();
 

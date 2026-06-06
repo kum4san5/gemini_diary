@@ -567,6 +567,48 @@ button:disabled {
     margin-top: 14px;
 }
 
+.management-lists {
+    display: grid;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.management-section {
+    display: grid;
+    gap: 10px;
+}
+
+.management-section h3 {
+    margin-bottom: 0;
+    font-size: 0.95rem;
+}
+
+.management-list {
+    display: grid;
+    gap: 8px;
+}
+
+.management-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-soft);
+}
+
+.management-item span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .knowledge-tools {
     display: grid;
     gap: 10px;

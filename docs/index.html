@@ -21,6 +21,7 @@
             </div>
             <div class="header-actions" aria-label="クイック操作">
                 <a class="action-link" href="#quick-log">ログを書く</a>
+                <a class="action-link" href="#settings-panel">Settings</a>
                 <a class="action-link action-link-primary" href="#todo-board">今日のTodo</a>
             </div>
         </header>
@@ -229,6 +230,21 @@
                     <button type="submit">ログを保存</button>
                 </form>
                 <div id="learning-log-list" class="log-list"></div>
+            </section>
+
+            <section class="panel settings-panel" id="settings-panel" aria-labelledby="settings-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Settings</p>
+                        <h2 id="settings-heading">データ操作</h2>
+                    </div>
+                    <span class="status-pill">アーカイブ対応</span>
+                </div>
+                <p class="placeholder">テストで追加したTodoや活動ログは、各カードのアーカイブボタンからNotion側でも非表示にできます。</p>
+                <div class="settings-actions">
+                    <button id="refresh-dashboard-btn" class="secondary-btn" type="button">Notionから再読み込み</button>
+                    <button id="clear-local-cache-btn" class="danger-btn" type="button">ローカル表示キャッシュをクリア</button>
+                </div>
             </section>
 
             <section class="panel diary-panel" aria-labelledby="diary-heading">

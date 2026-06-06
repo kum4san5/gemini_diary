@@ -377,7 +377,7 @@ function renderNotes(state) {
                 <article class="note-entry">
                     <div class="log-entry-header">
                         <strong>${note.title || "Untitled Note"}</strong>
-                        <button class="item-action" type="button" data-detail-type="note" data-detail-id="${note.id}">詳細</button>
+                        <button class="item-action" type="button" data-knowledge-select="${note.id}">表示</button>
                     </div>
                     <div class="task-meta">
                         <span class="status-pill">${note.area || "応用情報"}</span>
@@ -391,6 +391,45 @@ function renderNotes(state) {
             `;
         }).join("")
         : `<p class="placeholder">条件に合うナレッジがありません。検索条件を変えるか、新しいメモを残しましょう。</p>`;
+}
+
+function renderKnowledgeDetail(state, noteId) {
+    const pane = document.getElementById("knowledge-detail-pane");
+    if (!pane) return;
+
+    const note = noteId ? findItem(state, "note", noteId) : state.notes[0];
+    if (!note) {
+        pane.innerHTML = `<p class="placeholder">ナレッジを選ぶと詳細が表示されます。</p>`;
+        return;
+    }
+
+    const tags = tagText(note.tags);
+    pane.innerHTML = `
+        <div class="panel-header">
+            <div>
+                <p class="eyebrow">Selected Note</p>
+                <h2>${escapeHtml(note.title || "Untitled Note")}</h2>
+            </div>
+            <button class="item-action" type="button" data-detail-type="note" data-detail-id="${note.id}">詳細</button>
+        </div>
+        <div class="task-meta">
+            <span class="status-pill">${escapeHtml(note.area || "応用情報")}</span>
+            <span class="status-pill">${escapeHtml(note.category || "知識整理")}</span>
+            <span class="status-pill">${escapeHtml(note.genre || "その他")}</span>
+            ${note.actionable ? `<span class="priority-pill">実行候補</span>` : ""}
+        </div>
+        ${detailRows([
+            ["要約", note.summary],
+            ["本文", note.body],
+            ["タグ", tags],
+            ["参照URL", note.sourceUrl],
+            ["実行メモ", note.actionText],
+        ])}
+        <div class="detail-modal-actions">
+            <button class="secondary-btn" type="button" data-manage-edit="note" data-page-id="${note.id}">編集</button>
+            ${note.actionable && note.actionText ? `<button type="button" data-note-create-task="${note.id}">Todoにする</button>` : ""}
+        </div>
+    `;
 }
 
 function renderMetrics(state) {
@@ -450,9 +489,24 @@ function renderSyncStatus(state) {
 }
 
 function renderManagementLists(state) {
+    const shortcutList = document.getElementById("settings-shortcut-list");
     const taskList = document.getElementById("settings-task-list");
     const logList = document.getElementById("settings-log-list");
     const noteList = document.getElementById("settings-note-list");
+
+    if (shortcutList) {
+        shortcutList.innerHTML = state.shortcuts.length
+            ? state.shortcuts.slice(0, 12).map((shortcut) => `
+                <article class="management-item">
+                    <span>${shortcut.title || "Untitled Shortcut"}</span>
+                    <div class="management-actions">
+                        <button class="item-action" type="button" data-manage-edit="shortcut" data-page-id="${shortcut.id}">編集</button>
+                        <button class="item-action danger-text" type="button" data-manage-archive="shortcut" data-page-id="${shortcut.id}">アーカイブ</button>
+                    </div>
+                </article>
+            `).join("")
+            : `<p class="placeholder">管理対象のショートカットはありません。</p>`;
+    }
 
     if (taskList) {
         taskList.innerHTML = state.tasks.length
@@ -502,6 +556,7 @@ function render(state) {
     renderShortcuts(state);
     renderLogs(state);
     renderNotes(state);
+    renderKnowledgeDetail(state, state.selectedNoteId);
     renderMetrics(state);
     renderNextAction(state);
     renderSyncStatus(state);
@@ -526,7 +581,18 @@ function isValidUrl(value) {
 
 function showValidation(state, message) {
     setSyncState(state, "local", message);
-    alert(message);
+    showToast(message, "error");
+}
+
+function showToast(message, type = "info") {
+    const stack = document.getElementById("toast-stack");
+    if (!stack) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    stack.appendChild(toast);
+    window.setTimeout(() => toast.remove(), 3600);
 }
 
 function validateTaskInput(state, task) {
@@ -545,6 +611,12 @@ function validateKnowledgeInput(state, note) {
     if (!note.title && !note.summary && !note.body) return showValidation(state, "ナレッジはタイトル、要約、本文のどれかを入力してください。"), false;
     if (!isValidUrl(note.sourceUrl)) return showValidation(state, "参照URLはURL形式で入力してください。"), false;
     if (note.actionable && !note.actionText) return showValidation(state, "実行候補にする場合は実行メモを入力してください。"), false;
+    return true;
+}
+
+function validateShortcutInput(state, shortcut) {
+    if (!shortcut.title) return showValidation(state, "ショートカット名は必須です。"), false;
+    if (!shortcut.url || !isValidUrl(shortcut.url)) return showValidation(state, "ショートカットURLはURL形式で入力してください。"), false;
     return true;
 }
 
@@ -591,6 +663,13 @@ async function archiveItem(state, type, pageId) {
                 state.notes = state.notes.filter((note) => note.id !== pageId);
             },
         },
+        shortcut: {
+            confirmText: "このショートカットをNotion側でもアーカイブしますか？",
+            action: "archiveShortcut",
+            remove: () => {
+                state.shortcuts = state.shortcuts.filter((shortcut) => shortcut.id !== pageId);
+            },
+        },
     }[type];
 
     if (!config || !pageId) return;
@@ -610,7 +689,7 @@ async function archiveItem(state, type, pageId) {
         console.warn(`${config.action} failed`, error);
         setSyncState(state, "local", "Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
         render(state);
-        alert("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。");
+        showToast("Notion側のアーカイブに失敗しました。ローカル表示からは外しました。", "error");
     }
 }
 
@@ -618,6 +697,7 @@ function findItem(state, type, id) {
     if (type === "task") return state.tasks.find((item) => item.id === id);
     if (type === "log") return state.logs.find((item) => item.id === id);
     if (type === "note") return state.notes.find((item) => item.id === id);
+    if (type === "shortcut") return state.shortcuts.find((item) => item.id === id);
     return null;
 }
 
@@ -735,12 +815,12 @@ async function createTaskFromNote(state, noteId) {
 
     try {
         await saveTaskToNotion(state, task);
-        alert("Todoを作成しました。");
+        showToast("Todoを作成しました。", "success");
     } catch (error) {
         console.warn("createTaskFromNote fallback to localStorage", error);
         state.syncStatus = "local";
         render(state);
-        alert("NotionへのTodo作成に失敗しました。ローカルには追加しました。");
+        showToast("NotionへのTodo作成に失敗しました。ローカルには追加しました。", "error");
     }
 }
 
@@ -805,6 +885,25 @@ function buildEditForm(type, item) {
                 <label>エネルギー<select name="energy">${optionsHtml(["普通", "低い", "高い"], item.energy || "普通")}</select></label>
             </div>
             <label>メモ<textarea name="memo">${escapeHtml(item.memo)}</textarea></label>
+            <div class="edit-actions">
+                <button type="submit">保存</button>
+                <button class="secondary-btn" type="button" data-edit-close>キャンセル</button>
+            </div>
+        `;
+    }
+
+    if (type === "shortcut") {
+        return `
+            <input type="hidden" name="type" value="shortcut">
+            <input type="hidden" name="id" value="${escapeHtml(item.id)}">
+            <label>名前<input name="title" type="text" value="${escapeHtml(item.title)}"></label>
+            <label>URL<input name="url" type="url" value="${escapeHtml(item.url)}"></label>
+            <div class="form-row">
+                <label>カテゴリ<select name="category">${optionsHtml(["応用情報", "Notion", "開発", "ニュース", "英語", "スポット", "その他"], item.category || "その他")}</select></label>
+                <label>並び順<input name="sortOrder" type="number" min="0" step="1" value="${escapeHtml(item.sortOrder)}"></label>
+            </div>
+            <label>メモ<input name="memo" type="text" value="${escapeHtml(item.memo)}"></label>
+            <label class="inline-check"><input name="enabled" type="checkbox" ${checkboxValue(item.enabled !== false)}><span>表示する</span></label>
             <div class="edit-actions">
                 <button type="submit">保存</button>
                 <button class="secondary-btn" type="button" data-edit-close>キャンセル</button>
@@ -913,6 +1012,19 @@ async function saveEditedItem(state, form) {
         action = "updateKnowledgeNote";
         if (!validateKnowledgeInput(state, payload)) return;
         Object.assign(item, payload);
+    } else if (type === "shortcut") {
+        payload = {
+            ...payload,
+            title: String(formData.get("title") || "").trim(),
+            url: String(formData.get("url") || "").trim(),
+            category: String(formData.get("category") || ""),
+            sortOrder: Number(formData.get("sortOrder") || 0),
+            memo: String(formData.get("memo") || "").trim(),
+            enabled: formData.get("enabled") === "on",
+        };
+        action = "updateShortcut";
+        if (!validateShortcutInput(state, payload)) return;
+        Object.assign(item, payload);
     }
 
     saveLocalState(state);
@@ -924,6 +1036,7 @@ async function saveEditedItem(state, form) {
         if (result.task) Object.assign(item, result.task);
         if (result.learningLog) Object.assign(item, result.learningLog);
         if (result.knowledgeNote) Object.assign(item, result.knowledgeNote);
+        if (result.shortcut) Object.assign(item, result.shortcut);
         setSyncState(state, "notion", "Notionを更新しました。");
         saveLocalState(state);
         render(state);
@@ -933,7 +1046,7 @@ async function saveEditedItem(state, form) {
         console.warn(`${action} fallback to localStorage`, error);
         setSyncState(state, "local", "Notionへの更新に失敗しました。ローカル表示だけ更新しました。");
         render(state);
-        alert("Notionへの更新に失敗しました。ローカル表示だけ更新しました。");
+        showToast("Notionへの更新に失敗しました。ローカル表示だけ更新しました。", "error");
     }
 }
 
@@ -1091,6 +1204,53 @@ function setupLearningLogForm(state) {
     });
 }
 
+function setupQuickLogForm(state) {
+    const form = document.getElementById("quick-log-form");
+    if (!form) return;
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const minutes = Number(document.getElementById("quick-log-minutes").value);
+        const area = document.getElementById("quick-log-area").value;
+        const memo = document.getElementById("quick-log-memo").value.trim();
+        const category = inferCategory(memo, area);
+        const genre = inferGenre(memo, area);
+        const log = {
+            id: `log-${Date.now()}`,
+            date: todayKey(),
+            minutes,
+            area,
+            category,
+            genre,
+            understanding: "不明",
+            energy: "普通",
+            tags: "",
+            memo,
+        };
+
+        if (!validateLogInput(state, log)) return;
+
+        state.logs.unshift(log);
+        saveLocalState(state);
+        render(state);
+        form.reset();
+
+        try {
+            setSyncState(state, "syncing", "クイックログをNotionへ保存中...");
+            const result = await apiPost({ action: "saveLearningLog", ...log });
+            if (result.learningLog) state.logs[0] = result.learningLog;
+            setSyncState(state, "notion", "クイックログを保存しました。");
+            saveLocalState(state);
+            render(state);
+            showToast("記録しました。", "success");
+        } catch (error) {
+            console.warn("quick log fallback to localStorage", error);
+            setSyncState(state, "local", "クイックログはローカル保存です。Notion保存に失敗しました。");
+            render(state);
+        }
+    });
+}
+
 function setupKnowledgeForm(state) {
     const form = document.getElementById("knowledge-form");
     if (!form) return;
@@ -1187,6 +1347,16 @@ function setupKnowledgeFilters(state) {
     });
 }
 
+function setupKnowledgeWorkspace(state) {
+    document.getElementById("knowledge-panel")?.addEventListener("click", (event) => {
+        const selectButton = event.target.closest("[data-knowledge-select]");
+        if (!selectButton) return;
+        state.selectedNoteId = selectButton.dataset.knowledgeSelect;
+        saveLocalState(state);
+        renderKnowledgeDetail(state, state.selectedNoteId);
+    });
+}
+
 function setupManagementLists(state) {
     document.getElementById("settings-panel")?.addEventListener("click", (event) => {
         const archiveButton = event.target.closest("[data-manage-archive]");
@@ -1260,7 +1430,7 @@ function setupSettings(state) {
             await refreshFromNotion(state);
         } catch (error) {
             console.warn("refresh failed", error);
-            alert("Notionからの再読み込みに失敗しました。");
+            showToast("Notionからの再読み込みに失敗しました。", "error");
         } finally {
             refreshButton.disabled = false;
             refreshButton.textContent = "Notionから再読み込み";
@@ -1272,6 +1442,48 @@ function setupSettings(state) {
         localStorage.removeItem(STORAGE_KEY);
         Object.assign(state, cloneDefaultState());
         render(state);
+    });
+}
+
+function setupShortcutForm(state) {
+    const form = document.getElementById("shortcut-form");
+    if (!form) return;
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const shortcut = {
+            id: `shortcut-${Date.now()}`,
+            title: document.getElementById("shortcut-title").value.trim(),
+            url: document.getElementById("shortcut-url").value.trim(),
+            category: document.getElementById("shortcut-category").value,
+            enabled: true,
+            sortOrder: state.shortcuts.length + 1,
+            memo: document.getElementById("shortcut-memo").value.trim(),
+        };
+
+        if (!validateShortcutInput(state, shortcut)) return;
+
+        state.shortcuts.push(shortcut);
+        saveLocalState(state);
+        render(state);
+        form.reset();
+
+        try {
+            setSyncState(state, "syncing", "ショートカットをNotionへ保存中...");
+            const result = await apiPost({ action: "saveShortcut", ...shortcut });
+            if (result.shortcut) {
+                const index = state.shortcuts.findIndex((item) => item.id === shortcut.id);
+                if (index !== -1) state.shortcuts[index] = result.shortcut;
+            }
+            setSyncState(state, "notion", "ショートカットを保存しました。");
+            saveLocalState(state);
+            render(state);
+            showToast("ショートカットを追加しました。", "success");
+        } catch (error) {
+            console.warn("saveShortcut fallback to localStorage", error);
+            setSyncState(state, "local", "ショートカットはローカル保存です。Notion保存に失敗しました。");
+            render(state);
+        }
     });
 }
 
@@ -1317,11 +1529,14 @@ export async function setupDashboard() {
     render(state);
     setupTaskForm(state);
     setupTaskList(state);
+    setupQuickLogForm(state);
     setupLearningLogForm(state);
     setupKnowledgeForm(state);
     setupKnowledgeFilters(state);
+    setupKnowledgeWorkspace(state);
     setupManagementLists(state);
     setupDetailInteractions(state);
+    setupShortcutForm(state);
     setupSettings(state);
     setupViewTabs();
 

@@ -171,6 +171,42 @@
                 <p id="next-action-copy" class="ai-summary">未完了Todoから、今動かす候補を表示します。</p>
             </section>
 
+            <section class="panel quick-log-panel" aria-labelledby="quick-log-heading" data-view-panel="today">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Quick Log</p>
+                        <h2 id="quick-log-heading">すぐ記録</h2>
+                    </div>
+                </div>
+                <form id="quick-log-form" class="compact-form">
+                    <div class="form-row">
+                        <label>
+                            分
+                            <input id="quick-log-minutes" type="number" min="1" step="1" placeholder="15">
+                        </label>
+                        <label>
+                            領域
+                            <select id="quick-log-area">
+                                <option>応用情報</option>
+                                <option>英語</option>
+                                <option>プログラミング</option>
+                                <option>読書</option>
+                                <option>創作</option>
+                                <option>生活</option>
+                                <option>健康</option>
+                                <option>お金</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label>
+                        メモ
+                        <input id="quick-log-memo" type="text" placeholder="例: ネットワークを復習">
+                    </label>
+                    <button type="submit">記録する</button>
+                </form>
+            </section>
+
             <section class="panel shortcuts-panel" aria-labelledby="shortcut-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>
@@ -352,7 +388,12 @@
                     </label>
                     <button type="submit">ナレッジを保存</button>
                 </form>
-                <div id="knowledge-list" class="note-list"></div>
+                <div class="knowledge-workspace">
+                    <div id="knowledge-list" class="note-list"></div>
+                    <aside class="knowledge-detail-pane" id="knowledge-detail-pane">
+                        <p class="placeholder">ナレッジを選ぶと詳細が表示されます。</p>
+                    </aside>
+                </div>
             </section>
 
             <section class="panel settings-panel" id="settings-panel" aria-labelledby="settings-heading" data-view-panel="settings">
@@ -368,7 +409,41 @@
                     <button id="refresh-dashboard-btn" class="secondary-btn" type="button">Notionから再読み込み</button>
                     <button id="clear-local-cache-btn" class="danger-btn" type="button">ローカル表示キャッシュをクリア</button>
                 </div>
+                <form id="shortcut-form" class="compact-form settings-form">
+                    <h3>ショートカット追加</h3>
+                    <label>
+                        名前
+                        <input id="shortcut-title" type="text" placeholder="例: 過去問道場">
+                    </label>
+                    <div class="form-row">
+                        <label>
+                            URL
+                            <input id="shortcut-url" type="url" placeholder="https://...">
+                        </label>
+                        <label>
+                            カテゴリ
+                            <select id="shortcut-category">
+                                <option>応用情報</option>
+                                <option>Notion</option>
+                                <option>開発</option>
+                                <option>ニュース</option>
+                                <option>英語</option>
+                                <option>スポット</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label>
+                        メモ
+                        <input id="shortcut-memo" type="text" placeholder="起動台に表示するリンク">
+                    </label>
+                    <button type="submit">ショートカットを追加</button>
+                </form>
                 <div class="management-lists" aria-label="データ管理">
+                    <section class="management-section">
+                        <h3>ショートカット</h3>
+                        <div id="settings-shortcut-list" class="management-list"></div>
+                    </section>
                     <section class="management-section">
                         <h3>Todo</h3>
                         <div id="settings-task-list" class="management-list"></div>
@@ -467,6 +542,8 @@
             <form id="edit-form" class="compact-form"></form>
         </section>
     </div>
+
+    <div class="toast-stack" id="toast-stack" aria-live="polite" aria-label="通知"></div>
 
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>

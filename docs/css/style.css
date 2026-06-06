@@ -677,6 +677,24 @@ button:disabled {
     display: none;
 }
 
+.knowledge-workspace {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+    gap: 14px;
+    align-items: start;
+}
+
+.knowledge-detail-pane {
+    position: sticky;
+    top: 14px;
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-soft);
+}
+
 .detail-modal.hidden {
     display: none;
 }
@@ -746,6 +764,36 @@ button:disabled {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+}
+
+.toast-stack {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 1400;
+    display: grid;
+    gap: 10px;
+    width: min(360px, calc(100vw - 36px));
+}
+
+.toast {
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-bg);
+    color: var(--text-color);
+    box-shadow: var(--shadow);
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.toast.success {
+    border-color: var(--primary-color);
+}
+
+.toast.error {
+    border-color: var(--danger-color);
+    color: var(--danger-color);
 }
 
 .inline-check {
@@ -940,8 +988,13 @@ body.dark-mode .flatpickr-weekday {
     .metrics-grid,
     .dashboard-grid,
     .form-row,
-    .shortcut-list {
+    .shortcut-list,
+    .knowledge-workspace {
         grid-template-columns: 1fr;
+    }
+
+    .knowledge-detail-pane {
+        position: static;
     }
 
     .todo-panel,

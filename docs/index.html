@@ -288,6 +288,59 @@
                 <div id="learning-log-list" class="log-list"></div>
             </section>
 
+            <section class="panel daily-review-panel" aria-labelledby="daily-review-heading" data-view-panel="logs">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Review</p>
+                        <h2 id="daily-review-heading">日次レビュー</h2>
+                    </div>
+                    <span class="status-pill">Relation自動紐づけ</span>
+                </div>
+                <form id="daily-review-form" class="compact-form">
+                    <div class="form-row">
+                        <label>
+                            気分
+                            <select id="review-mood">
+                                <option>普通</option>
+                                <option>低い</option>
+                                <option>良い</option>
+                                <option>最高</option>
+                            </select>
+                        </label>
+                        <label>
+                            エネルギー
+                            <select id="review-energy">
+                                <option>普通</option>
+                                <option>低い</option>
+                                <option>高い</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label>
+                        集中
+                        <select id="review-focus">
+                            <option>普通</option>
+                            <option>低い</option>
+                            <option>高い</option>
+                        </select>
+                    </label>
+                    <label>
+                        よかったこと
+                        <textarea id="review-highlights" placeholder="今日よかったこと、積み上がったこと"></textarea>
+                    </label>
+                    <label>
+                        振り返り
+                        <textarea id="review-reflection" placeholder="詰まったこと、気づいたこと"></textarea>
+                    </label>
+                    <label>
+                        明日の一手
+                        <input id="review-tomorrow" type="text" placeholder="明日まずやること">
+                    </label>
+                    <button type="submit">今日を保存</button>
+                </form>
+                <div id="daily-review-list" class="log-list"></div>
+            </section>
+
             <section class="panel knowledge-panel" id="knowledge-panel" aria-labelledby="knowledge-heading" data-view-panel="knowledge">
                 <div class="panel-header">
                     <div>

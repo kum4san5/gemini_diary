@@ -51,6 +51,7 @@ const defaultState = {
     ],
     logs: [],
     notes: [],
+    reviews: [],
     shortcuts: [
         { title: "過去問道場", category: "応用情報", url: "https://www.ap-siken.com/apkakomon.php" },
         { title: "Notion", category: "Knowledge", url: "https://www.notion.so/" },
@@ -100,17 +101,19 @@ async function apiPost(payload) {
 }
 
 async function loadRemoteState() {
-    const [tasks, logs, notes, shortcuts] = await Promise.all([
+    const [tasks, logs, notes, shortcuts, reviews] = await Promise.all([
         apiGet("getTasks"),
         apiGet("getLearningLogs"),
         apiGet("getKnowledgeNotes"),
         apiGet("getShortcuts"),
+        apiGet("getDailyReviews"),
     ]);
 
     return {
         tasks: Array.isArray(tasks) ? tasks : [],
         logs: Array.isArray(logs) ? logs : [],
         notes: Array.isArray(notes) ? notes : [],
+        reviews: Array.isArray(reviews) ? reviews : [],
         shortcuts: Array.isArray(shortcuts) && shortcuts.length ? shortcuts : defaultState.shortcuts,
         syncStatus: "notion",
     };
@@ -340,6 +343,23 @@ function renderLogs(state) {
         : `<p class="placeholder">まだ活動ログがありません。最初の1セッションを残しましょう。</p>`;
 }
 
+function renderDailyReviews(state) {
+    const list = document.getElementById("daily-review-list");
+    if (!list) return;
+
+    const latest = state.reviews.slice(0, 5);
+    list.innerHTML = latest.length
+        ? latest.map((review) => `
+            <article class="log-entry">
+                <div class="log-entry-header">
+                    <strong>${review.date || "日付なし"} / ${review.mood || "普通"} / ${review.studyMinutes || 0}分</strong>
+                </div>
+                <p>${review.highlights || review.reflection || "レビュー本文なし"}</p>
+            </article>
+        `).join("")
+        : `<p class="placeholder">まだ日次レビューがありません。夜に今日を保存しましょう。</p>`;
+}
+
 function renderNotes(state) {
     const list = document.getElementById("knowledge-list");
     if (!list) return;
@@ -555,6 +575,7 @@ function render(state) {
     renderTasks(state);
     renderShortcuts(state);
     renderLogs(state);
+    renderDailyReviews(state);
     renderNotes(state);
     renderKnowledgeDetail(state, state.selectedNoteId);
     renderMetrics(state);
@@ -618,6 +639,19 @@ function validateShortcutInput(state, shortcut) {
     if (!shortcut.title) return showValidation(state, "ショートカット名は必須です。"), false;
     if (!shortcut.url || !isValidUrl(shortcut.url)) return showValidation(state, "ショートカットURLはURL形式で入力してください。"), false;
     return true;
+}
+
+function todayRelationIds(state) {
+    const today = todayKey();
+    const taskIds = state.tasks
+        .filter((task) => normalizeDateKey(task.createdAt) === today || normalizeDateKey(task.updatedAt) === today || normalizeDateKey(task.completedAt) === today)
+        .map((task) => task.id)
+        .filter((id) => id && !id.startsWith("task-"));
+    const learningLogIds = state.logs
+        .filter((log) => normalizeDateKey(log.date) === today)
+        .map((log) => log.id)
+        .filter((id) => id && !id.startsWith("log-"));
+    return { taskIds, learningLogIds };
 }
 
 async function refreshFromNotion(state) {
@@ -1487,6 +1521,56 @@ function setupShortcutForm(state) {
     });
 }
 
+function setupDailyReviewForm(state) {
+    const form = document.getElementById("daily-review-form");
+    if (!form) return;
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const metrics = calculateMetrics(state);
+        const relations = todayRelationIds(state);
+        const review = {
+            id: `review-${Date.now()}`,
+            date: todayKey(),
+            mood: document.getElementById("review-mood").value,
+            energy: document.getElementById("review-energy").value,
+            focus: document.getElementById("review-focus").value,
+            effortScore: metrics.score,
+            studyMinutes: metrics.todayMinutes,
+            completedTasks: metrics.completedCount,
+            highlights: document.getElementById("review-highlights").value.trim(),
+            reflection: document.getElementById("review-reflection").value.trim(),
+            tomorrow: document.getElementById("review-tomorrow").value.trim(),
+            taskIds: relations.taskIds,
+            learningLogIds: relations.learningLogIds,
+        };
+
+        if (!review.highlights && !review.reflection && !review.tomorrow) {
+            showValidation(state, "日次レビューは、よかったこと・振り返り・明日の一手のどれかを入力してください。");
+            return;
+        }
+
+        state.reviews.unshift(review);
+        saveLocalState(state);
+        render(state);
+        form.reset();
+
+        try {
+            setSyncState(state, "syncing", "日次レビューをNotionへ保存中...");
+            const result = await apiPost({ action: "saveDailyReview", ...review });
+            if (result.dailyReview) state.reviews[0] = result.dailyReview;
+            setSyncState(state, "notion", "日次レビューを保存しました。");
+            saveLocalState(state);
+            render(state);
+            showToast("今日を保存しました。", "success");
+        } catch (error) {
+            console.warn("saveDailyReview fallback to localStorage", error);
+            setSyncState(state, "local", "日次レビューはローカル保存です。Notion保存に失敗しました。");
+            render(state);
+        }
+    });
+}
+
 function setupViewTabs() {
     const tabs = Array.from(document.querySelectorAll("[data-view-tab]"));
     const jumps = Array.from(document.querySelectorAll("[data-view-jump]"));
@@ -1537,6 +1621,7 @@ export async function setupDashboard() {
     setupManagementLists(state);
     setupDetailInteractions(state);
     setupShortcutForm(state);
+    setupDailyReviewForm(state);
     setupSettings(state);
     setupViewTabs();
 

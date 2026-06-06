@@ -780,19 +780,26 @@ function setupViewTabs() {
             tab.classList.toggle("active", active);
             tab.setAttribute("aria-selected", String(active));
         });
+        jumps.forEach((jump) => {
+            jump.classList.toggle("active", jump.dataset.viewJump === view);
+        });
         panels.forEach((panel) => {
             panel.hidden = panel.dataset.viewPanel !== view;
         });
     }
 
-    tabs.forEach((tab) => {
-        tab.addEventListener("click", () => activateView(tab.dataset.viewTab));
-    });
-    jumps.forEach((jump) => {
-        jump.addEventListener("click", () => {
+    document.addEventListener("click", (event) => {
+        const tab = event.target.closest("[data-view-tab]");
+        if (tab) {
+            activateView(tab.dataset.viewTab);
+            return;
+        }
+
+        const jump = event.target.closest("[data-view-jump]");
+        if (jump) {
             activateView(jump.dataset.viewJump);
             document.querySelector(".view-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
+        }
     });
 
     activateView("today");

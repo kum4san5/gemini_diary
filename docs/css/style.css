@@ -144,6 +144,15 @@ button.action-link-primary {
     color: #ffffff;
 }
 
+.action-link.active {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.action-link-primary.active {
+    color: #ffffff;
+}
+
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));

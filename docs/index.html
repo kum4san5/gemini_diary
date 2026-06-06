@@ -17,7 +17,7 @@
             <div>
                 <p class="eyebrow">Personal OS</p>
                 <h1>Life Dashboard</h1>
-                <p class="header-copy">今日のTodo、応用情報の学習、積み上げを一箇所で確認します。</p>
+                <p class="header-copy">今日のTodo、学習ログ、ショートカット、日々の積み上げを一箇所で確認します。</p>
             </div>
             <div class="header-actions" aria-label="クイック操作">
                 <a class="action-link" href="#quick-log">ログを書く</a>
@@ -55,7 +55,7 @@
                         <p class="eyebrow">Action</p>
                         <h2 id="todo-heading">今日のTodo</h2>
                     </div>
-                    <span class="status-pill">応用情報</span>
+                    <span class="status-pill">同期確認中</span>
                 </div>
 
                 <div id="task-list" class="task-list"></div>
@@ -67,6 +67,19 @@
                     </label>
                     <div class="form-row">
                         <label>
+                            領域
+                            <select id="task-area">
+                                <option>学習</option>
+                                <option>開発</option>
+                                <option>英語</option>
+                                <option>創作</option>
+                                <option>生活</option>
+                                <option>お金</option>
+                                <option>健康</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
+                        <label>
                             優先度
                             <select id="task-priority">
                                 <option>今日中</option>
@@ -74,6 +87,8 @@
                                 <option>余裕があれば</option>
                             </select>
                         </label>
+                    </div>
+                    <div class="form-row">
                         <label>
                             分類
                             <select id="task-category">
@@ -81,12 +96,15 @@
                                 <option>模擬試験</option>
                                 <option>苦手復習</option>
                                 <option>知識整理</option>
+                                <option>開発</option>
+                                <option>調査</option>
+                                <option>記録</option>
+                                <option>生活</option>
+                                <option>その他</option>
                             </select>
                         </label>
-                    </div>
-                    <div class="form-row">
                         <label>
-                            出題ジャンル
+                            ジャンル
                             <select id="task-genre">
                                 <option>セキュリティ</option>
                                 <option>ネットワーク</option>
@@ -98,9 +116,15 @@
                                 <option>その他</option>
                             </select>
                         </label>
+                    </div>
+                    <div class="form-row">
                         <label>
                             見積時間
                             <input id="task-estimated-minutes" type="number" min="0" step="5" placeholder="30">
+                        </label>
+                        <label>
+                            リンク
+                            <input id="task-link" type="url" placeholder="https://...">
                         </label>
                     </div>
                     <label>
@@ -141,7 +165,7 @@
                         <h2 id="ai-heading">AI秘書メモ</h2>
                     </div>
                 </div>
-                <p id="ai-summary" class="ai-summary">今日はまず応用情報の小さな1セッションを作りましょう。30分でも記録すれば、ダッシュボードに積み上がります。</p>
+                <p id="ai-summary" class="ai-summary">今日はまず小さな1セッションを作りましょう。15分でも記録すれば、ダッシュボードに積み上がります。</p>
             </section>
 
             <section class="panel shortcuts-panel" aria-labelledby="shortcut-heading">
@@ -175,6 +199,10 @@
                                 <option>模擬試験</option>
                                 <option>苦手復習</option>
                                 <option>知識整理</option>
+                                <option>動画</option>
+                                <option>読書</option>
+                                <option>実装</option>
+                                <option>その他</option>
                             </select>
                         </label>
                     </div>
@@ -190,6 +218,25 @@
                                 <option>システム開発</option>
                                 <option>アルゴリズム</option>
                                 <option>その他</option>
+                            </select>
+                        </label>
+                        <label>
+                            理解度
+                            <select id="log-understanding">
+                                <option>不明</option>
+                                <option>少し理解</option>
+                                <option>だいたい理解</option>
+                                <option>人に説明できる</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            エネルギー
+                            <select id="log-energy">
+                                <option>普通</option>
+                                <option>低い</option>
+                                <option>高い</option>
                             </select>
                         </label>
                         <label>

@@ -8,10 +8,12 @@ const defaultState = {
             id: "task-1",
             title: "応用情報 過去問道場 セキュリティ 30問",
             priority: "今日中",
+            area: "学習",
             category: "過去問道場",
             genre: "セキュリティ",
             estimatedMinutes: 30,
             memo: "",
+            link: "",
             status: "準備中",
             completed: false,
         },
@@ -24,6 +26,17 @@ const defaultState = {
         { title: "TED", category: "English", url: "https://www.ted.com/" },
     ],
     syncStatus: "local",
+};
+
+const categoryByArea = {
+    "学習": ["過去問道場", "模擬試験", "苦手復習", "知識整理", "動画", "読書", "その他"],
+    "開発": ["開発", "調査", "実装", "設計", "テスト", "リファクタ", "その他"],
+    "英語": ["日記", "リスニング", "スピーキング", "読解", "単語", "その他"],
+    "創作": ["アイデア", "執筆", "制作", "公開", "その他"],
+    "生活": ["家事", "予定", "買い物", "整理", "その他"],
+    "お金": ["収入", "支出", "確認", "調査", "その他"],
+    "健康": ["運動", "睡眠", "食事", "通院", "その他"],
+    "その他": ["記録", "調査", "その他"],
 };
 
 function cloneDefaultState() {
@@ -93,10 +106,24 @@ function statusLabel(task) {
     return task.status || "未着手";
 }
 
-function inferCategory(text) {
+function inferArea(text) {
+    if (/英語|単語|リスニング|スピーキング|日記/.test(text)) return "英語";
+    if (/開発|実装|コード|github|api|css|javascript|gas/i.test(text)) return "開発";
+    if (/運動|睡眠|食事|健康/.test(text)) return "健康";
+    if (/支出|収入|家計|お金/.test(text)) return "お金";
+    if (/創作|執筆|制作|記事/.test(text)) return "創作";
+    if (/掃除|買い物|生活|家事/.test(text)) return "生活";
+    return "学習";
+}
+
+function inferCategory(text, area) {
+    if (area === "開発") return /調査|確認/.test(text) ? "調査" : "開発";
+    if (area === "英語") return /単語/.test(text) ? "単語" : "日記";
+    if (area === "生活") return /買い物/.test(text) ? "買い物" : "予定";
     if (/模擬|試験/.test(text)) return "模擬試験";
     if (/苦手|復習/.test(text)) return "苦手復習";
     if (/整理|まとめ|知識/.test(text)) return "知識整理";
+    if (/読書|本/.test(text)) return "読書";
     return "過去問道場";
 }
 
@@ -139,6 +166,13 @@ function calculateMetrics(state) {
     return { todayMinutes, completedCount, streak, score };
 }
 
+function setSelectOptions(select, options, selectedValue) {
+    select.innerHTML = options.map((option) => `<option>${option}</option>`).join("");
+    if (selectedValue && options.includes(selectedValue)) {
+        select.value = selectedValue;
+    }
+}
+
 function renderTasks(state) {
     const list = document.getElementById("task-list");
     if (!list) return;
@@ -154,6 +188,7 @@ function renderTasks(state) {
                     <div class="task-meta">
                         <span class="priority-pill">${task.priority || "今日中"}</span>
                         <span class="state-pill">${statusLabel(task)}</span>
+                        <span class="status-pill">${task.area || "学習"}</span>
                         <span class="status-pill">${task.category || "未分類"}</span>
                         <span class="status-pill">${task.genre || "その他"}</span>
                         ${task.estimatedMinutes ? `<span class="status-pill">見積 ${task.estimatedMinutes}分</span>` : ""}
@@ -218,7 +253,7 @@ function renderMetrics(state) {
 
     const summary = document.getElementById("ai-summary");
     if (metrics.todayMinutes === 0) {
-        summary.textContent = "今日はまだ学習ログがありません。過去問道場を15分だけ進めると、起動が軽くなります。";
+        summary.textContent = "今日はまだ学習ログがありません。15分だけ進めると、起動が軽くなります。";
     } else {
         summary.textContent = `今日は${metrics.todayMinutes}分積み上がっています。次は苦手ジャンルを1つだけ復習すると、記録の質が上がります。`;
     }
@@ -243,10 +278,19 @@ function setupTaskForm(state) {
     if (!form) return;
 
     const titleInput = document.getElementById("task-title");
+    const areaInput = document.getElementById("task-area");
+    const categoryInput = document.getElementById("task-category");
     const genreInput = document.getElementById("task-genre");
-    titleInput.addEventListener("input", () => {
+
+    function updateTaskInferences() {
+        const area = areaInput.value || inferArea(titleInput.value);
+        const category = inferCategory(titleInput.value, area);
+        setSelectOptions(categoryInput, categoryByArea[area] || categoryByArea["その他"], category);
         genreInput.value = inferGenre(titleInput.value);
-    });
+    }
+
+    titleInput.addEventListener("input", updateTaskInferences);
+    areaInput.addEventListener("change", updateTaskInferences);
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -257,17 +301,19 @@ function setupTaskForm(state) {
             id: `task-${Date.now()}`,
             title,
             priority: document.getElementById("task-priority").value,
-            area: "学習",
-            category: document.getElementById("task-category").value || inferCategory(title),
-            genre: genreInput.value || inferGenre(title),
+            area: areaInput.value,
+            category: categoryInput.value,
+            genre: genreInput.value,
             estimatedMinutes: Number(document.getElementById("task-estimated-minutes").value || 0),
             memo: document.getElementById("task-memo").value.trim(),
+            link: document.getElementById("task-link").value.trim(),
             status: "準備中",
             completed: false,
         };
 
         state.tasks.unshift(task);
         form.reset();
+        setSelectOptions(categoryInput, categoryByArea["学習"], "過去問道場");
         saveLocalState(state);
         render(state);
 
@@ -331,7 +377,7 @@ function setupLearningLogForm(state) {
     const memoInput = document.getElementById("log-memo");
     memoInput.addEventListener("input", () => {
         const memo = memoInput.value;
-        document.getElementById("log-category").value = inferCategory(memo);
+        document.getElementById("log-category").value = inferCategory(memo, "学習");
         document.getElementById("log-genre").value = inferGenre(memo);
     });
 
@@ -347,6 +393,8 @@ function setupLearningLogForm(state) {
             area: "応用情報",
             category: document.getElementById("log-category").value,
             genre: document.getElementById("log-genre").value,
+            understanding: document.getElementById("log-understanding").value,
+            energy: document.getElementById("log-energy").value,
             tags: document.getElementById("log-tags").value.trim(),
             memo: memoInput.value.trim(),
         };

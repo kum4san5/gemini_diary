@@ -10,14 +10,14 @@
     <link rel="stylesheet" href="css/components/dark-mode-toggle.css">
 </head>
 <body>
-    <button class="dark-mode-toggle" id="darkModeToggle" type="button">Dark</button>
+    <button class="dark-mode-toggle" id="darkModeToggle" type="button" aria-label="ダークモード切り替え">Dark</button>
 
     <main class="app-shell">
         <header class="dashboard-header">
             <div>
                 <p class="eyebrow">Personal OS</p>
                 <h1>Life Dashboard</h1>
-                <p class="header-copy">今日のTodo、学習ログ、ショートカット、日々の積み上げを一箇所で確認します。</p>
+                <p class="header-copy">今日のTodo、活動ログ、ショートカット、日々の積み上げを一箇所で確認します。</p>
             </div>
             <div class="header-actions" aria-label="クイック操作">
                 <a class="action-link" href="#quick-log">ログを書く</a>
@@ -25,9 +25,9 @@
             </div>
         </header>
 
-        <section class="metrics-grid" aria-label="学習サマリー">
+        <section class="metrics-grid" aria-label="活動サマリー">
             <article class="metric-panel">
-                <span class="metric-label">今日の学習</span>
+                <span class="metric-label">今日の活動</span>
                 <strong id="today-minutes">0分</strong>
                 <span class="metric-note">時間を最優先で評価</span>
             </article>
@@ -39,7 +39,7 @@
             <article class="metric-panel">
                 <span class="metric-label">完了Todo</span>
                 <strong id="completed-count">0件</strong>
-                <span class="metric-note">補助指標</span>
+                <span class="metric-note">小さな達成の数</span>
             </article>
             <article class="metric-panel accent">
                 <span class="metric-label">頑張りスコア</span>
@@ -63,7 +63,7 @@
                 <form id="task-form" class="compact-form">
                     <label>
                         Todo
-                        <input id="task-title" type="text" placeholder="例: 過去問道場 セキュリティ 30問">
+                        <input id="task-title" type="text" placeholder="例: 開発 ダッシュボードUIを30分改善">
                     </label>
                     <div class="form-row">
                         <label>
@@ -72,6 +72,7 @@
                                 <option>学習</option>
                                 <option>開発</option>
                                 <option>英語</option>
+                                <option>読書</option>
                                 <option>創作</option>
                                 <option>生活</option>
                                 <option>お金</option>
@@ -90,31 +91,12 @@
                     </div>
                     <div class="form-row">
                         <label>
-                            分類
-                            <select id="task-category">
-                                <option>過去問道場</option>
-                                <option>模擬試験</option>
-                                <option>苦手復習</option>
-                                <option>知識整理</option>
-                                <option>開発</option>
-                                <option>調査</option>
-                                <option>記録</option>
-                                <option>生活</option>
-                                <option>その他</option>
-                            </select>
+                            カテゴリ
+                            <select id="task-category"></select>
                         </label>
                         <label>
                             ジャンル
-                            <select id="task-genre">
-                                <option>セキュリティ</option>
-                                <option>ネットワーク</option>
-                                <option>データベース</option>
-                                <option>マネジメント</option>
-                                <option>ストラテジ</option>
-                                <option>システム開発</option>
-                                <option>アルゴリズム</option>
-                                <option>その他</option>
-                            </select>
+                            <select id="task-genre"></select>
                         </label>
                     </div>
                     <div class="form-row">
@@ -129,7 +111,7 @@
                     </div>
                     <label>
                         メモ
-                        <textarea id="task-memo" placeholder="例: サブネット計算を重点的に復習"></textarea>
+                        <textarea id="task-memo" placeholder="例: 先にNotion連携の動作確認をする"></textarea>
                     </label>
                     <button type="submit">Todoを追加</button>
                 </form>
@@ -139,7 +121,7 @@
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Progress</p>
-                        <h2 id="progress-heading">学習度合い</h2>
+                        <h2 id="progress-heading">活動度合い</h2>
                     </div>
                 </div>
                 <div class="progress-ring" aria-label="頑張りスコア">
@@ -148,7 +130,7 @@
                 </div>
                 <div class="progress-bars">
                     <div>
-                        <div class="bar-label"><span>学習時間</span><span id="minutes-bar-label">0 / 180</span></div>
+                        <div class="bar-label"><span>活動時間</span><span id="minutes-bar-label">0 / 180</span></div>
                         <div class="bar-track"><span id="minutes-bar"></span></div>
                     </div>
                     <div>
@@ -165,7 +147,7 @@
                         <h2 id="ai-heading">AI秘書メモ</h2>
                     </div>
                 </div>
-                <p id="ai-summary" class="ai-summary">今日はまず小さな1セッションを作りましょう。15分でも記録すれば、ダッシュボードに積み上がります。</p>
+                <p id="ai-summary" class="ai-summary">今日はまだ小さな1セッションを作りましょう。5分でも記録すれば、ダッシュボードに積み上がります。</p>
             </section>
 
             <section class="panel shortcuts-panel" aria-labelledby="shortcut-heading">
@@ -182,44 +164,42 @@
                 <div class="panel-header">
                     <div>
                         <p class="eyebrow">Capture</p>
-                        <h2 id="log-heading">学習ログ</h2>
+                        <h2 id="log-heading">活動ログ</h2>
                     </div>
                     <span class="status-pill">自動補完つき</span>
                 </div>
                 <form id="learning-log-form" class="compact-form">
                     <div class="form-row">
                         <label>
-                            実績時間
-                            <input id="log-minutes" type="number" min="1" step="1" placeholder="30">
-                        </label>
-                        <label>
-                            分類
-                            <select id="log-category">
-                                <option>過去問道場</option>
-                                <option>模擬試験</option>
-                                <option>苦手復習</option>
-                                <option>知識整理</option>
-                                <option>動画</option>
+                            領域
+                            <select id="log-area">
+                                <option>応用情報</option>
+                                <option>英語</option>
+                                <option>プログラミング</option>
                                 <option>読書</option>
-                                <option>実装</option>
+                                <option>創作</option>
+                                <option>生活</option>
+                                <option>健康</option>
+                                <option>お金</option>
                                 <option>その他</option>
                             </select>
+                        </label>
+                        <label>
+                            実績時間
+                            <input id="log-minutes" type="number" min="1" step="1" placeholder="30">
                         </label>
                     </div>
                     <div class="form-row">
                         <label>
-                            出題ジャンル
-                            <select id="log-genre">
-                                <option>セキュリティ</option>
-                                <option>ネットワーク</option>
-                                <option>データベース</option>
-                                <option>マネジメント</option>
-                                <option>ストラテジ</option>
-                                <option>システム開発</option>
-                                <option>アルゴリズム</option>
-                                <option>その他</option>
-                            </select>
+                            カテゴリ
+                            <select id="log-category"></select>
                         </label>
+                        <label>
+                            ジャンル
+                            <select id="log-genre"></select>
+                        </label>
+                    </div>
+                    <div class="form-row">
                         <label>
                             理解度
                             <select id="log-understanding">
@@ -229,8 +209,6 @@
                                 <option>人に説明できる</option>
                             </select>
                         </label>
-                    </div>
-                    <div class="form-row">
                         <label>
                             エネルギー
                             <select id="log-energy">
@@ -239,14 +217,14 @@
                                 <option>高い</option>
                             </select>
                         </label>
-                        <label>
-                            タグ
-                            <input id="log-tags" type="text" placeholder="午前問題, 復習">
-                        </label>
                     </div>
                     <label>
+                        タグ
+                        <input id="log-tags" type="text" placeholder="午前問題, 復習">
+                    </label>
+                    <label>
                         メモ
-                        <textarea id="log-memo" placeholder="例: 過去問道場でネットワークを30問。サブネット計算が怪しい。"></textarea>
+                        <textarea id="log-memo" placeholder="例: 過去問道場でネットワークを20問。サブネット計算が怪しい。"></textarea>
                     </label>
                     <button type="submit">ログを保存</button>
                 </form>

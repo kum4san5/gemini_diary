@@ -2,6 +2,37 @@ import { GAS_WEB_APP_URL } from "../config.js";
 
 const STORAGE_KEY = "lifeDashboardState";
 
+const apCategories = ["過去問道場", "模擬試験", "苦手復習", "知識整理", "動画", "読書", "調査", "その他"];
+const apGenres = ["セキュリティ", "ネットワーク", "データベース", "マネジメント", "ストラテジ", "システム開発", "アルゴリズム", "その他"];
+
+const categoryByArea = {
+    "学習": apCategories,
+    "応用情報": apCategories,
+    "プログラミング": ["開発", "調査", "実装", "設計", "テスト", "リファクタ", "その他"],
+    "開発": ["開発", "調査", "実装", "設計", "テスト", "リファクタ", "その他"],
+    "英語": ["日記", "リスニング", "スピーキング", "読解", "単語", "その他"],
+    "読書": ["技術書", "ビジネス", "自己理解", "小説", "英語", "メモ", "その他"],
+    "創作": ["アイデア", "執筆", "制作", "公開", "その他"],
+    "生活": ["家事", "買い物", "予定", "整理", "手続き", "その他"],
+    "お金": ["収入", "支出", "確認", "調査", "その他"],
+    "健康": ["運動", "睡眠", "食事", "通院", "その他"],
+    "その他": ["記録", "調査", "その他"],
+};
+
+const genreByArea = {
+    "学習": apGenres,
+    "応用情報": apGenres,
+    "プログラミング": ["フロントエンド", "バックエンド", "GAS", "Notion", "DB", "UI", "テスト", "設計", "その他"],
+    "開発": ["フロントエンド", "バックエンド", "GAS", "Notion", "DB", "UI", "テスト", "設計", "その他"],
+    "英語": ["語彙", "文法", "発音", "リスニング", "スピーキング", "ライティング", "読解", "その他"],
+    "読書": ["技術", "ビジネス", "自己理解", "小説", "学習", "メモ", "その他"],
+    "創作": ["文章", "デザイン", "アイデア", "構成", "公開", "その他"],
+    "生活": ["家事", "買い物", "予定", "健康", "整理", "手続き", "その他"],
+    "お金": ["収入", "支出", "投資", "固定費", "調査", "その他"],
+    "健康": ["運動", "睡眠", "食事", "メンタル", "通院", "その他"],
+    "その他": ["その他"],
+};
+
 const defaultState = {
     tasks: [
         {
@@ -26,17 +57,6 @@ const defaultState = {
         { title: "TED", category: "English", url: "https://www.ted.com/" },
     ],
     syncStatus: "local",
-};
-
-const categoryByArea = {
-    "学習": ["過去問道場", "模擬試験", "苦手復習", "知識整理", "動画", "読書", "その他"],
-    "開発": ["開発", "調査", "実装", "設計", "テスト", "リファクタ", "その他"],
-    "英語": ["日記", "リスニング", "スピーキング", "読解", "単語", "その他"],
-    "創作": ["アイデア", "執筆", "制作", "公開", "その他"],
-    "生活": ["家事", "予定", "買い物", "整理", "その他"],
-    "お金": ["収入", "支出", "確認", "調査", "その他"],
-    "健康": ["運動", "睡眠", "食事", "通院", "その他"],
-    "その他": ["記録", "調査", "その他"],
 };
 
 function cloneDefaultState() {
@@ -101,34 +121,91 @@ function normalizeDateKey(value) {
     return value ? String(value).split("T")[0] : "";
 }
 
-function statusLabel(task) {
-    if (task.completed) return "完了";
-    return task.status || "未着手";
+function setSelectOptions(select, options, selectedValue) {
+    select.innerHTML = options.map((option) => `<option>${option}</option>`).join("");
+    if (selectedValue && options.includes(selectedValue)) {
+        select.value = selectedValue;
+    }
+}
+
+function updateAreaOptions(areaSelect, categorySelect, genreSelect, preferredCategory, preferredGenre) {
+    const area = areaSelect.value || "その他";
+    setSelectOptions(categorySelect, categoryByArea[area] || categoryByArea["その他"], preferredCategory);
+    setSelectOptions(genreSelect, genreByArea[area] || genreByArea["その他"], preferredGenre);
 }
 
 function inferArea(text) {
-    if (/英語|単語|リスニング|スピーキング|日記/.test(text)) return "英語";
-    if (/開発|実装|コード|github|api|css|javascript|gas/i.test(text)) return "開発";
-    if (/運動|睡眠|食事|健康/.test(text)) return "健康";
-    if (/支出|収入|家計|お金/.test(text)) return "お金";
-    if (/創作|執筆|制作|記事/.test(text)) return "創作";
-    if (/掃除|買い物|生活|家事/.test(text)) return "生活";
+    if (/応用情報|過去問|午前|午後|試験|学習|勉強|復習/.test(text)) return "学習";
+    if (/英語|単語|リスニング|スピーキング|日記|ted/i.test(text)) return "英語";
+    if (/読書|本|書籍|要約|学び/.test(text)) return "読書";
+    if (/開発|実装|コード|github|api|css|javascript|gas|notion|ui|テスト/i.test(text)) return "開発";
+    if (/運動|睡眠|食事|健康|通院/.test(text)) return "健康";
+    if (/支出|収入|家計|お金|投資|固定費/.test(text)) return "お金";
+    if (/創作|執筆|制作|記事|アイデア/.test(text)) return "創作";
+    if (/掃除|買い物|生活|家事|手続き|予定/.test(text)) return "生活";
     return "学習";
 }
 
 function inferCategory(text, area) {
-    if (area === "開発") return /調査|確認/.test(text) ? "調査" : "開発";
-    if (area === "英語") return /単語/.test(text) ? "単語" : "日記";
-    if (area === "生活") return /買い物/.test(text) ? "買い物" : "予定";
+    if (area === "開発" || area === "プログラミング") {
+        if (/調査|確認/.test(text)) return "調査";
+        if (/設計/.test(text)) return "設計";
+        if (/テスト|spec|jest/i.test(text)) return "テスト";
+        if (/リファクタ/.test(text)) return "リファクタ";
+        return "実装";
+    }
+    if (area === "英語") {
+        if (/単語/.test(text)) return "単語";
+        if (/リスニング/.test(text)) return "リスニング";
+        if (/スピーキング/.test(text)) return "スピーキング";
+        if (/読解/.test(text)) return "読解";
+        return "日記";
+    }
+    if (area === "読書") {
+        if (/技術|プログラミング|IT|設計/.test(text)) return "技術書";
+        if (/ビジネス|仕事/.test(text)) return "ビジネス";
+        if (/自己理解|自己啓発|習慣/.test(text)) return "自己理解";
+        return "メモ";
+    }
+    if (area === "生活") {
+        if (/買い物/.test(text)) return "買い物";
+        if (/掃除|洗濯|家事/.test(text)) return "家事";
+        if (/手続き/.test(text)) return "手続き";
+        return "予定";
+    }
     if (/模擬|試験/.test(text)) return "模擬試験";
     if (/苦手|復習/.test(text)) return "苦手復習";
     if (/整理|まとめ|知識/.test(text)) return "知識整理";
+    if (/動画/.test(text)) return "動画";
     if (/読書|本/.test(text)) return "読書";
     return "過去問道場";
 }
 
-function inferGenre(text) {
+function inferGenre(text, area) {
     const normalized = text.toLowerCase();
+    if (area === "開発" || area === "プログラミング") {
+        if (/front|html|css|ui|画面|docs/.test(normalized)) return "フロントエンド";
+        if (/back|api|gas|server|backend/.test(normalized)) return "バックエンド";
+        if (/notion/.test(normalized)) return "Notion";
+        if (/db|database|データベース/.test(normalized)) return "DB";
+        if (/test|jest|テスト/.test(normalized)) return "テスト";
+        return "設計";
+    }
+    if (area === "英語") {
+        if (/単語|語彙/.test(text)) return "語彙";
+        if (/文法/.test(text)) return "文法";
+        if (/発音/.test(text)) return "発音";
+        if (/リスニング/.test(text)) return "リスニング";
+        if (/スピーキング/.test(text)) return "スピーキング";
+        return "ライティング";
+    }
+    if (area === "読書") {
+        if (/技術|IT|プログラミング/.test(text)) return "技術";
+        if (/ビジネス/.test(text)) return "ビジネス";
+        if (/自己理解|習慣/.test(text)) return "自己理解";
+        return "メモ";
+    }
+
     const rules = [
         ["セキュリティ", /セキュリティ|暗号|認証|脆弱|攻撃/],
         ["ネットワーク", /ネットワーク|tcp|ip|dns|サブネット|ルータ/],
@@ -136,10 +213,15 @@ function inferGenre(text) {
         ["マネジメント", /マネジメント|品質|進捗|リスク|プロジェクト/],
         ["ストラテジ", /ストラテジ|経営|会計|法務/],
         ["システム開発", /設計|テスト|開発|要件/],
-        ["アルゴリズム", /アルゴリズム|計算量|探索|ソート/],
+        ["アルゴリズム", /アルゴリズム|計算|探索|ソート/],
     ];
     const match = rules.find(([, pattern]) => pattern.test(normalized));
-    return match ? match[0] : "その他";
+    return match ? match[0] : (genreByArea[area] || genreByArea["その他"])[0];
+}
+
+function statusLabel(task) {
+    if (task.completed) return "完了";
+    return task.status || "未着手";
 }
 
 function calculateStreak(logs) {
@@ -164,13 +246,6 @@ function calculateMetrics(state) {
     const score = Math.min(todayMinutes, 180) + Math.min(streak * 5, 50) + completedCount * 5;
 
     return { todayMinutes, completedCount, streak, score };
-}
-
-function setSelectOptions(select, options, selectedValue) {
-    select.innerHTML = options.map((option) => `<option>${option}</option>`).join("");
-    if (selectedValue && options.includes(selectedValue)) {
-        select.value = selectedValue;
-    }
 }
 
 function renderTasks(state) {
@@ -225,13 +300,13 @@ function renderLogs(state) {
                 const tags = Array.isArray(log.tags) ? log.tags.join(",") : log.tags;
                 return `
                     <article class="log-entry">
-                        <strong>${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
+                        <strong>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
                         <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
                     </article>
                 `;
             })
             .join("")
-        : `<p class="placeholder">まだ学習ログがありません。最初の1セッションを残しましょう。</p>`;
+        : `<p class="placeholder">まだ活動ログがありません。最初の1セッションを残しましょう。</p>`;
 }
 
 function renderMetrics(state) {
@@ -253,9 +328,9 @@ function renderMetrics(state) {
 
     const summary = document.getElementById("ai-summary");
     if (metrics.todayMinutes === 0) {
-        summary.textContent = "今日はまだ学習ログがありません。15分だけ進めると、起動が軽くなります。";
+        summary.textContent = "今日はまだ活動ログがありません。5分だけ進めると、起動のハードルが一気に下がります。";
     } else {
-        summary.textContent = `今日は${metrics.todayMinutes}分積み上がっています。次は苦手ジャンルを1つだけ復習すると、記録の質が上がります。`;
+        summary.textContent = `今日は${metrics.todayMinutes}分積み上がっています。次は苦手ジャンルか、未完了Todoを1つだけ動かすのがよさそうです。`;
     }
 }
 
@@ -282,15 +357,22 @@ function setupTaskForm(state) {
     const categoryInput = document.getElementById("task-category");
     const genreInput = document.getElementById("task-genre");
 
+    updateAreaOptions(areaInput, categoryInput, genreInput, "過去問道場", "セキュリティ");
+
     function updateTaskInferences() {
-        const area = areaInput.value || inferArea(titleInput.value);
-        const category = inferCategory(titleInput.value, area);
-        setSelectOptions(categoryInput, categoryByArea[area] || categoryByArea["その他"], category);
-        genreInput.value = inferGenre(titleInput.value);
+        const inferredArea = inferArea(titleInput.value);
+        if (titleInput.value.trim()) areaInput.value = inferredArea;
+        updateAreaOptions(
+            areaInput,
+            categoryInput,
+            genreInput,
+            inferCategory(titleInput.value, areaInput.value),
+            inferGenre(titleInput.value, areaInput.value),
+        );
     }
 
     titleInput.addEventListener("input", updateTaskInferences);
-    areaInput.addEventListener("change", updateTaskInferences);
+    areaInput.addEventListener("change", () => updateAreaOptions(areaInput, categoryInput, genreInput));
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -313,7 +395,7 @@ function setupTaskForm(state) {
 
         state.tasks.unshift(task);
         form.reset();
-        setSelectOptions(categoryInput, categoryByArea["学習"], "過去問道場");
+        updateAreaOptions(areaInput, categoryInput, genreInput, "過去問道場", "セキュリティ");
         saveLocalState(state);
         render(state);
 
@@ -345,7 +427,7 @@ function setupTaskToggle(state) {
         if (!task) return;
 
         task.completed = event.target.checked;
-        task.status = task.completed ? "完了" : "未着手";
+        task.status = task.completed ? "完了" : "準備中";
         task.completedAt = task.completed ? new Date().toISOString() : "";
         saveLocalState(state);
         render(state);
@@ -374,11 +456,24 @@ function setupLearningLogForm(state) {
     const form = document.getElementById("learning-log-form");
     if (!form) return;
 
+    const areaInput = document.getElementById("log-area");
+    const categoryInput = document.getElementById("log-category");
+    const genreInput = document.getElementById("log-genre");
     const memoInput = document.getElementById("log-memo");
+
+    updateAreaOptions(areaInput, categoryInput, genreInput, "過去問道場", "セキュリティ");
+
+    areaInput.addEventListener("change", () => updateAreaOptions(areaInput, categoryInput, genreInput));
     memoInput.addEventListener("input", () => {
-        const memo = memoInput.value;
-        document.getElementById("log-category").value = inferCategory(memo, "学習");
-        document.getElementById("log-genre").value = inferGenre(memo);
+        const area = inferArea(memoInput.value);
+        areaInput.value = area === "学習" ? "応用情報" : area === "開発" ? "プログラミング" : area;
+        updateAreaOptions(
+            areaInput,
+            categoryInput,
+            genreInput,
+            inferCategory(memoInput.value, areaInput.value),
+            inferGenre(memoInput.value, areaInput.value),
+        );
     });
 
     form.addEventListener("submit", async (event) => {
@@ -390,9 +485,9 @@ function setupLearningLogForm(state) {
             id: `log-${Date.now()}`,
             date: todayKey(),
             minutes,
-            area: "応用情報",
-            category: document.getElementById("log-category").value,
-            genre: document.getElementById("log-genre").value,
+            area: areaInput.value,
+            category: categoryInput.value,
+            genre: genreInput.value,
             understanding: document.getElementById("log-understanding").value,
             energy: document.getElementById("log-energy").value,
             tags: document.getElementById("log-tags").value.trim(),
@@ -401,6 +496,7 @@ function setupLearningLogForm(state) {
 
         state.logs.unshift(log);
         form.reset();
+        updateAreaOptions(areaInput, categoryInput, genreInput, "過去問道場", "セキュリティ");
         saveLocalState(state);
         render(state);
 

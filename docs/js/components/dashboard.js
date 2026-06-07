@@ -569,6 +569,69 @@ function renderProjectHub(state) {
     renderHubList(state, "resource", "resource-list", state.extended?.resources || []);
 }
 
+function renderGoalDetail(state) {
+    const list = document.getElementById("goal-detail-list");
+    const body = document.getElementById("goal-detail-body");
+    if (!list || !body) return;
+
+    const goals = state.extended?.goals || [];
+    list.innerHTML = goals.length
+        ? goals.slice(0, 12).map((goal) => `
+            <article class="hub-item ${state.selectedGoalId === goal.id ? "selected" : ""}">
+                <div>
+                    <strong>${escapeHtml(goal.title || "Untitled Goal")}</strong>
+                    <p>${escapeHtml([goal.area, goal.status, goal.targetDate ? `目標日 ${goal.targetDate}` : ""].filter(Boolean).join(" / "))}</p>
+                </div>
+                <button class="item-action" type="button" data-goal-select="${goal.id}">表示</button>
+            </article>
+        `).join("")
+        : `<p class="placeholder">まだGoalがありません。目標プランナーから作れます。</p>`;
+
+    const goal = goals.find((item) => item.id === state.selectedGoalId) || goals[0];
+    if (!goal) {
+        body.innerHTML = `<p class="placeholder">Goalを選ぶと関連Todo、習慣、Resource、活動ログが表示されます。</p>`;
+        return;
+    }
+
+    const goalIds = [goal.id].filter(Boolean);
+    const tasks = state.tasks.filter((task) => (task.goalIds || []).some((id) => goalIds.includes(id)));
+    const habits = (state.extended?.habits || []).filter((habit) => (habit.goalIds || []).some((id) => goalIds.includes(id)));
+    const resources = (state.extended?.resources || []).filter((resource) => (resource.goalIds || []).some((id) => goalIds.includes(id)));
+    const logs = state.logs.filter((log) => (log.goalIds || []).some((id) => goalIds.includes(id)));
+    const completed = tasks.filter((task) => task.completed).length;
+    const progress = tasks.length ? Math.round((completed / tasks.length) * 100) : Number(goal.progress || 0);
+
+    body.innerHTML = `
+        <div class="panel-header">
+            <div>
+                <p class="eyebrow">Selected Goal</p>
+                <h2>${escapeHtml(goal.title || "Untitled Goal")}</h2>
+            </div>
+            <span class="status-pill">${progress}%</span>
+        </div>
+        ${detailRows([
+            ["領域", goal.area],
+            ["状態", goal.status],
+            ["目標日", goal.targetDate],
+            ["成功条件", goal.successCriteria],
+            ["メモ", goal.memo],
+        ])}
+        ${goalDetailSection("関連Todo", tasks.map((task) => `${task.completed ? "完了" : "未完了"}: ${task.title}`))}
+        ${goalDetailSection("習慣", habits.map((habit) => `${habit.title} / ${habit.frequency || "頻度未設定"}`))}
+        ${goalDetailSection("Resource", resources.map((resource) => resource.title || resource.url || "Untitled Resource"))}
+        ${goalDetailSection("活動ログ", logs.map((log) => `${log.date || "日付なし"} / ${log.minutes || 0}分 / ${log.memo || log.category || "ログ"}`))}
+    `;
+}
+
+function goalDetailSection(title, items) {
+    return `
+        <section class="goal-detail-section">
+            <h3>${escapeHtml(title)}</h3>
+            ${items.length ? items.slice(0, 8).map((item) => `<p>${escapeHtml(item)}</p>`).join("") : `<p class="placeholder">まだありません。</p>`}
+        </section>
+    `;
+}
+
 function renderGoalPlanPreview(state) {
     const target = document.getElementById("goal-plan-preview");
     if (!target) return;
@@ -589,14 +652,43 @@ function renderGoalPlanPreview(state) {
             </div>
         </section>
         <section class="plan-columns">
-            ${planColumn("サブタスク", plan.tasks.map((task) => `${task.title} / ${task.estimatedMinutes}分`))}
-            ${planColumn("習慣", plan.habits.map((habit) => `${habit.title} / ${habit.frequency}`))}
-            ${planColumn("Resource候補", plan.resources.map((resource) => resource.title))}
+            ${planEditableColumn("サブタスク", "tasks", plan.tasks, (task, index) => `
+                <input data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(task.title)}">
+                <div class="form-row">
+                    <select data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="priority">${optionsHtml(["今日中", "なるべく早く", "余裕があれば"], task.priority)}</select>
+                    <input data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="estimatedMinutes" type="number" min="0" step="5" value="${escapeHtml(task.estimatedMinutes)}">
+                </div>
+            `)}
+            ${planEditableColumn("習慣", "habits", plan.habits, (habit, index) => `
+                <input data-plan-edit="habits" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(habit.title)}">
+                <div class="form-row">
+                    <select data-plan-edit="habits" data-plan-index="${index}" data-plan-field="frequency">${optionsHtml(["毎日", "毎週", "週2回", "週3回"], habit.frequency)}</select>
+                    <input data-plan-edit="habits" data-plan-index="${index}" data-plan-field="targetMinutes" type="number" min="0" step="5" value="${escapeHtml(habit.targetMinutes)}">
+                </div>
+            `)}
+            ${planEditableColumn("Resource候補", "resources", plan.resources, (resource, index) => `
+                <input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(resource.title)}">
+                <input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="memo" value="${escapeHtml(resource.memo)}">
+            `)}
             ${planColumn("週次計画", plan.weeklyPlan.map((week) => `Week ${week.week}: ${week.title}`))}
         </section>
         <div class="detail-modal-actions">
             <button type="button" data-goal-plan-confirm>この内容で登録</button>
             <button class="secondary-btn" type="button" data-goal-plan-clear>やり直す</button>
+        </div>
+    `;
+}
+
+function planEditableColumn(title, collection, items, renderItem) {
+    return `
+        <div class="plan-column">
+            <h4>${escapeHtml(title)}</h4>
+            ${items.length ? items.map((item, index) => `
+                <div class="plan-edit-item">
+                    ${renderItem(item, index)}
+                    <button class="item-action danger-text" type="button" data-plan-remove="${collection}" data-plan-index="${index}">削除</button>
+                </div>
+            `).join("") : `<p>候補なし</p>`}
         </div>
     `;
 }
@@ -756,15 +848,24 @@ function renderNextAction(state) {
     const target = document.getElementById("next-action-copy");
     if (!target) return;
 
+    const goals = state.extended?.goals || [];
     const nextTask = state.tasks.find((task) => !task.completed && task.priority === "今日中")
         || state.tasks.find((task) => !task.completed)
         || null;
     const actionableNote = state.notes.find((note) => note.actionable && note.actionText);
+    const activeGoal = goals.find((goal) => goal.status !== "完了") || goals[0];
 
     if (nextTask) {
-        target.textContent = `まずは「${nextTask.title}」。完璧に終わらせるより、5分だけ着手で十分です。`;
+        const goal = (nextTask.goalIds || [])
+            .map((id) => goals.find((item) => item.id === id))
+            .find(Boolean);
+        target.textContent = goal
+            ? `「${goal.title}」の一手として、まずは「${nextTask.title}」。5分だけ着手で十分です。`
+            : `まずは「${nextTask.title}」。完璧に終わらせるより、5分だけ着手で十分です。`;
     } else if (actionableNote) {
         target.textContent = `ナレッジの実行候補「${actionableNote.actionText}」をTodoにすると、次の行動に移せます。`;
+    } else if (activeGoal) {
+        target.textContent = `Goal「${activeGoal.title}」に向けて、最初のサブタスクを1つ作るのがよさそうです。Goalsタブの目標プランナーから提案できます。`;
     } else {
         target.textContent = "今すぐ動かす候補はありません。Todoか実行候補つきナレッジを1つ追加しましょう。";
     }
@@ -872,6 +973,7 @@ function render(state) {
     renderNotes(state);
     renderKnowledgeDetail(state, state.selectedNoteId);
     renderProjectHub(state);
+    renderGoalDetail(state);
     renderGoalPlanPreview(state);
     renderMetrics(state);
     renderNextAction(state);
@@ -2302,6 +2404,18 @@ function setupGoalPlanner(state) {
     });
 
     document.getElementById("goal-plan-preview")?.addEventListener("click", async (event) => {
+        const removeButton = event.target.closest("[data-plan-remove]");
+        if (removeButton && state.pendingGoalPlan) {
+            const collection = removeButton.dataset.planRemove;
+            const index = Number(removeButton.dataset.planIndex);
+            if (Array.isArray(state.pendingGoalPlan[collection])) {
+                state.pendingGoalPlan[collection].splice(index, 1);
+                saveLocalState(state);
+                render(state);
+            }
+            return;
+        }
+
         if (event.target.closest("[data-goal-plan-clear]")) {
             state.pendingGoalPlan = null;
             saveLocalState(state);
@@ -2311,6 +2425,40 @@ function setupGoalPlanner(state) {
         if (event.target.closest("[data-goal-plan-confirm]")) {
             await commitGoalPlan(state);
         }
+    });
+
+    document.getElementById("goal-plan-preview")?.addEventListener("input", (event) => {
+        const input = event.target.closest("[data-plan-edit]");
+        if (!input || !state.pendingGoalPlan) return;
+        const collection = input.dataset.planEdit;
+        const index = Number(input.dataset.planIndex);
+        const field = input.dataset.planField;
+        const item = state.pendingGoalPlan[collection]?.[index];
+        if (!item || !field) return;
+        item[field] = input.type === "number" ? Number(input.value || 0) : input.value;
+        saveLocalState(state);
+    });
+
+    document.getElementById("goal-plan-preview")?.addEventListener("change", (event) => {
+        const input = event.target.closest("[data-plan-edit]");
+        if (!input || !state.pendingGoalPlan) return;
+        const collection = input.dataset.planEdit;
+        const index = Number(input.dataset.planIndex);
+        const field = input.dataset.planField;
+        const item = state.pendingGoalPlan[collection]?.[index];
+        if (!item || !field) return;
+        item[field] = input.type === "number" ? Number(input.value || 0) : input.value;
+        saveLocalState(state);
+    });
+}
+
+function setupGoalDetailInteractions(state) {
+    document.getElementById("goal-detail-list")?.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-goal-select]");
+        if (!button) return;
+        state.selectedGoalId = button.dataset.goalSelect;
+        saveLocalState(state);
+        renderGoalDetail(state);
     });
 }
 
@@ -2459,6 +2607,7 @@ export async function setupDashboard() {
     setupManagementLists(state);
     setupProjectHubInteractions(state);
     setupGoalPlanner(state);
+    setupGoalDetailInteractions(state);
     setupDetailInteractions(state);
     setupShortcutForm(state);
     setupDailyReviewForm(state);

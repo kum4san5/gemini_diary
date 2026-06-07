@@ -610,6 +610,17 @@ button:disabled {
     grid-column: span 3;
 }
 
+.goal-detail-panel {
+    grid-column: span 3;
+}
+
+.goal-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.75fr) minmax(360px, 1.25fr);
+    gap: 14px;
+    align-items: start;
+}
+
 .goal-plan-preview {
     display: grid;
     gap: 14px;
@@ -636,6 +647,15 @@ button:disabled {
     margin-bottom: 0;
     color: var(--muted-color);
     line-height: 1.55;
+}
+
+.plan-edit-item {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-bg);
 }
 
 .plan-columns {
@@ -677,6 +697,10 @@ button:disabled {
     background: var(--panel-bg);
 }
 
+.hub-item.selected {
+    border-color: var(--primary-color);
+}
+
 .hub-item strong,
 .hub-item p {
     min-width: 0;
@@ -693,6 +717,25 @@ button:disabled {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+}
+
+.goal-detail-section {
+    display: grid;
+    gap: 7px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-soft);
+}
+
+.goal-detail-section h3,
+.goal-detail-section p {
+    margin-bottom: 0;
+}
+
+.goal-detail-section p {
+    color: var(--muted-color);
+    line-height: 1.55;
 }
 
 .settings-actions {
@@ -1085,12 +1128,14 @@ body.dark-mode .flatpickr-weekday {
     .todo-panel,
     .log-panel,
     .projects-panel,
+    .goal-detail-panel,
     .goal-planner-panel {
         grid-column: span 2;
         grid-row: auto;
     }
 
     .project-hub-grid,
+    .goal-detail-grid,
     .plan-columns {
         grid-template-columns: 1fr;
     }
@@ -1132,6 +1177,7 @@ body.dark-mode .flatpickr-weekday {
     .settings-panel,
     .knowledge-panel,
     .projects-panel,
+    .goal-detail-panel,
     .goal-planner-panel,
     .diary-panel,
     .history-panel {

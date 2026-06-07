@@ -22,6 +22,7 @@
             <div class="header-actions" aria-label="クイック操作">
                 <button class="action-link" type="button" data-view-jump="logs">ログを書く</button>
                 <button class="action-link" type="button" data-view-jump="knowledge">ナレッジ</button>
+                <button class="action-link" type="button" data-view-jump="goals">Goals</button>
                 <button class="action-link" type="button" data-view-jump="projects">Projects</button>
                 <button class="action-link" type="button" data-view-jump="settings">Settings</button>
                 <button class="action-link action-link-primary" type="button" data-view-jump="today">今日のTodo</button>
@@ -53,6 +54,7 @@
 
         <nav class="view-tabs" aria-label="表示切り替え">
             <button class="view-tab active" type="button" data-view-tab="today">Today</button>
+            <button class="view-tab" type="button" data-view-tab="goals">Goals</button>
             <button class="view-tab" type="button" data-view-tab="knowledge">Knowledge</button>
             <button class="view-tab" type="button" data-view-tab="logs">Logs</button>
             <button class="view-tab" type="button" data-view-tab="projects">Projects</button>
@@ -231,6 +233,36 @@
                     </div>
                 </div>
                 <div id="shortcut-list" class="shortcut-list"></div>
+            </section>
+
+            <section class="panel goal-planner-panel" id="goal-planner-panel" aria-labelledby="goal-planner-heading" data-view-panel="goals">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Planner</p>
+                        <h2 id="goal-planner-heading">目標プランナー</h2>
+                    </div>
+                    <span class="status-pill">確認して登録</span>
+                </div>
+                <form id="goal-planner-form" class="compact-form">
+                    <label>
+                        やりたいこと
+                        <input id="goal-planner-title" type="text" placeholder="例: 応用情報を取りたい / ダイエットする / アプリを公開したい">
+                    </label>
+                    <div class="form-row">
+                        <label>
+                            期限
+                            <input id="goal-planner-target-date" type="date">
+                        </label>
+                        <label>
+                            補足
+                            <input id="goal-planner-memo" type="text" placeholder="今の状況、希望、制約など">
+                        </label>
+                    </div>
+                    <button type="submit">進め方を提案</button>
+                </form>
+                <div id="goal-plan-preview" class="goal-plan-preview">
+                    <p class="placeholder">タイトルを入れると、Goal、サブタスク、習慣、Resource候補、週次計画を提案します。</p>
+                </div>
             </section>
 
             <section class="panel log-panel" id="quick-log" aria-labelledby="log-heading" data-view-panel="logs">
@@ -609,8 +641,10 @@
                 <p class="placeholder">テストで追加したTodo、活動ログ、ナレッジは各カードのアーカイブボタンからNotion側でも非表示にできます。</p>
                 <div class="settings-actions">
                     <button id="refresh-dashboard-btn" class="secondary-btn" type="button">Notionから再読み込み</button>
+                    <button id="schema-check-btn" class="secondary-btn" type="button">Notion DB整合性チェック</button>
                     <button id="clear-local-cache-btn" class="danger-btn" type="button">ローカル表示キャッシュをクリア</button>
                 </div>
+                <div id="schema-check-result" class="schema-check-result"></div>
                 <form id="shortcut-form" class="compact-form settings-form">
                     <h3>ショートカット追加</h3>
                     <label>

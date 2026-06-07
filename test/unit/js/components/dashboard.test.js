@@ -27,4 +27,28 @@ describe("dashboard classification helpers", () => {
     expect(dashboardTestHooks.isValidUrl("https://example.com/article")).toBe(true);
     expect(dashboardTestHooks.isValidUrl("not a url")).toBe(false);
   });
+
+  test("builds a qualification goal plan with tasks, habits, and resources", () => {
+    const plan = dashboardTestHooks.buildGoalPlan({
+      title: "応用情報を取りたい",
+      memo: "3か月で午前と午後を進めたい",
+    });
+
+    expect(plan.domain).toBe("qualification");
+    expect(plan.area).toBe("学習");
+    expect(plan.weeks).toBe(12);
+    expect(plan.tasks.length).toBeGreaterThan(3);
+    expect(plan.habits.length).toBeGreaterThan(0);
+    expect(plan.resources.length).toBeGreaterThan(0);
+  });
+
+  test("classifies health and project goals", () => {
+    expect(dashboardTestHooks.inferGoalDomain("ダイエットする 食事と運動")).toBe("health");
+    expect(dashboardTestHooks.inferGoalDomain("アプリをリリースしたい GitHub")).toBe("project");
+  });
+
+  test("estimates goal weeks from loose text", () => {
+    expect(dashboardTestHooks.estimateGoalWeeks("2か月でやる")).toBe(8);
+    expect(dashboardTestHooks.estimateGoalWeeks("6週間でやる")).toBe(6);
+  });
 });

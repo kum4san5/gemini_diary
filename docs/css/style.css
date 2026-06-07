@@ -606,6 +606,44 @@ button:disabled {
     grid-column: span 3;
 }
 
+.goal-planner-panel {
+    grid-column: span 3;
+}
+
+.goal-plan-preview {
+    display: grid;
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.plan-summary,
+.plan-column {
+    display: grid;
+    gap: 9px;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-soft);
+}
+
+.plan-summary h3,
+.plan-column h4 {
+    margin-bottom: 0;
+}
+
+.plan-summary p,
+.plan-column p {
+    margin-bottom: 0;
+    color: var(--muted-color);
+    line-height: 1.55;
+}
+
+.plan-columns {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
 .project-hub-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -661,6 +699,36 @@ button:disabled {
     display: grid;
     gap: 10px;
     margin-top: 14px;
+}
+
+.schema-check-result {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.schema-check-item {
+    display: grid;
+    gap: 4px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-soft);
+}
+
+.schema-check-item p {
+    margin-bottom: 0;
+    color: var(--muted-color);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.schema-check-item.missing {
+    border-color: var(--danger-color);
+}
+
+.schema-check-item.missing p {
+    color: var(--danger-color);
 }
 
 .management-lists {
@@ -1016,12 +1084,14 @@ body.dark-mode .flatpickr-weekday {
 
     .todo-panel,
     .log-panel,
-    .projects-panel {
+    .projects-panel,
+    .goal-planner-panel {
         grid-column: span 2;
         grid-row: auto;
     }
 
-    .project-hub-grid {
+    .project-hub-grid,
+    .plan-columns {
         grid-template-columns: 1fr;
     }
 }
@@ -1062,6 +1132,7 @@ body.dark-mode .flatpickr-weekday {
     .settings-panel,
     .knowledge-panel,
     .projects-panel,
+    .goal-planner-panel,
     .diary-panel,
     .history-panel {
         grid-column: span 1;

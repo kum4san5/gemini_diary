@@ -296,6 +296,150 @@ function inferGenre(text, area) {
     return match ? match[0] : (genreByArea[area] || genreByArea["その他"])[0];
 }
 
+function inferGoalDomain(text) {
+    if (/資格|試験|応用情報|基本情報|toeic|英検|合格|取得/i.test(text)) return "qualification";
+    if (/ダイエット|減量|体重|痩せ|運動|筋トレ|食事|健康/.test(text)) return "health";
+    if (/開発|アプリ|サービス|リリース|github|ポートフォリオ|プロジェクト/i.test(text)) return "project";
+    if (/創作|小説|記事|漫画|動画|制作|作品/.test(text)) return "creative";
+    if (/収入|副業|売上|稼|節約|貯金|投資/.test(text)) return "money";
+    if (/英語|単語|リスニング|スピーキング|語学/i.test(text)) return "language";
+    return "general";
+}
+
+function goalDomainLabel(domain) {
+    return {
+        qualification: "資格・学習",
+        health: "健康・習慣",
+        project: "開発プロジェクト",
+        creative: "創作",
+        money: "お金・収入",
+        language: "英語・語学",
+        general: "一般目標",
+    }[domain] || "一般目標";
+}
+
+function estimateGoalWeeks(text) {
+    const monthMatch = String(text).match(/(\d+)\s*(か月|ヶ月|カ月|月)/);
+    if (monthMatch) return Math.max(2, Number(monthMatch[1]) * 4);
+    const weekMatch = String(text).match(/(\d+)\s*(週間|週)/);
+    if (weekMatch) return Math.max(1, Number(weekMatch[1]));
+    if (/今年|年内/.test(text)) return 24;
+    if (/来月/.test(text)) return 4;
+    if (/今月/.test(text)) return 3;
+    return 8;
+}
+
+function weeksFromToday(weeks) {
+    const date = new Date();
+    date.setDate(date.getDate() + weeks * 7);
+    return date.toISOString().split("T")[0];
+}
+
+function buildGoalPlan(input) {
+    const title = String(input?.title || "").trim();
+    const memo = String(input?.memo || "").trim();
+    const text = `${title} ${memo}`.trim();
+    const domain = inferGoalDomain(text);
+    const area = domain === "health" ? "健康"
+        : domain === "project" ? "開発"
+        : domain === "creative" ? "創作"
+        : domain === "money" ? "お金"
+        : domain === "language" ? "英語"
+        : "学習";
+    const weeks = estimateGoalWeeks(text);
+    const targetDate = input?.targetDate || weeksFromToday(weeks);
+
+    const templates = {
+        qualification: {
+            tasks: ["出題範囲と教材を確認する", "頻出分野を1周する", "過去問を解いて弱点を洗い出す", "弱点分野を復習する", "模擬試験で時間配分を確認する"],
+            habits: ["毎日15分の学習ログを残す", "週1回、苦手分野を整理する"],
+            resources: ["公式試験情報", "過去問/問題演習サイト", "要点整理ノート"],
+        },
+        health: {
+            tasks: ["現状の体重・食事・運動を記録する", "無理のない食事ルールを決める", "週の運動メニューを決める", "停滞時の見直し条件を決める"],
+            habits: ["毎日体重か食事を1つ記録する", "週3回、短い運動をする"],
+            resources: ["食事記録ルール", "運動メニュー", "体調メモ"],
+        },
+        project: {
+            tasks: ["目的と完成条件を1文で決める", "必要機能を洗い出す", "最小版を実装する", "動作確認と改善をする", "公開/共有まで進める"],
+            habits: ["週2回、開発ログを残す", "詰まりをナレッジ化する"],
+            resources: ["GitHub/リポジトリ", "仕様メモ", "参考実装"],
+        },
+        creative: {
+            tasks: ["作品のテーマと完成形を決める", "構成案を作る", "初稿/初版を作る", "見直しポイントを整理する", "公開または保存する"],
+            habits: ["週2回、制作時間を記録する", "アイデアをナレッジに残す"],
+            resources: ["参考作品", "構成メモ", "公開先"],
+        },
+        money: {
+            tasks: ["現状の収入・支出をざっくり把握する", "目標金額と期限を決める", "増やす/減らす行動を3つ選ぶ", "週次で数字を確認する"],
+            habits: ["週1回、お金のログを確認する", "支出メモを残す"],
+            resources: ["家計メモ", "収入候補リスト", "固定費チェックリスト"],
+        },
+        language: {
+            tasks: ["現在地を確認する", "単語・文法・リスニングの配分を決める", "教材を1つ選ぶ", "週ごとの練習量を決める", "成果確認の小テストを入れる"],
+            habits: ["毎日10分、英語に触れる", "週1回、できた表現をナレッジ化する"],
+            resources: ["単語帳", "リスニング教材", "英語日記"],
+        },
+        general: {
+            tasks: ["成功条件を決める", "必要な行動を洗い出す", "最初の1週間で試す", "週次で進め方を見直す"],
+            habits: ["週1回、進捗を確認する"],
+            resources: ["参考メモ", "チェックリスト"],
+        },
+    };
+
+    const template = templates[domain] || templates.general;
+    const taskItems = template.tasks.map((task, index) => ({
+        title: task,
+        priority: index < 2 ? "なるべく早く" : "余裕があれば",
+        area,
+        category: domain === "qualification" ? "知識整理" : "計画",
+        genre: goalDomainLabel(domain),
+        estimatedMinutes: index === 0 ? 15 : 30,
+        status: index === 0 ? "準備中" : "未着手",
+        memo: `${title} のサブタスク`,
+    }));
+
+    return {
+        title: title || "新しい目標",
+        domain,
+        domainLabel: goalDomainLabel(domain),
+        area,
+        targetDate,
+        weeks,
+        successCriteria: memo || `${title} を期限までに達成できる状態にする`,
+        goal: {
+            title: title || "新しい目標",
+            area,
+            targetDate,
+            status: "未着手",
+            priority: "中",
+            progress: 0,
+            successCriteria: memo || `${title} を期限までに達成できる状態にする`,
+            memo: `自動提案: ${goalDomainLabel(domain)} / ${weeks}週間目安`,
+        },
+        tasks: taskItems,
+        habits: template.habits.map((habit) => ({
+            title: habit,
+            area,
+            status: "有効",
+            frequency: /毎日/.test(habit) ? "毎日" : "毎週",
+            targetMinutes: /15/.test(habit) ? 15 : 10,
+            memo: `${title} を進めるための習慣`,
+        })),
+        resources: template.resources.map((resource) => ({
+            title: resource,
+            area,
+            type: "メモ",
+            category: goalDomainLabel(domain),
+            memo: `${title} に関連するResource候補`,
+        })),
+        weeklyPlan: Array.from({ length: Math.min(weeks, 8) }, (_, index) => ({
+            week: index + 1,
+            title: index === 0 ? "準備と現在地確認" : index === weeks - 1 ? "仕上げと振り返り" : `実行週 ${index + 1}`,
+        })),
+    };
+}
+
 function normalizeKnowledgeArea(area) {
     if (area === "学習") return "応用情報";
     if (area === "プログラミング") return "開発";
@@ -423,6 +567,47 @@ function renderProjectHub(state) {
     renderHubList(state, "project", "project-list", state.extended?.projects || []);
     renderHubList(state, "goal", "goal-list", state.extended?.goals || []);
     renderHubList(state, "resource", "resource-list", state.extended?.resources || []);
+}
+
+function renderGoalPlanPreview(state) {
+    const target = document.getElementById("goal-plan-preview");
+    if (!target) return;
+    const plan = state.pendingGoalPlan;
+    if (!plan) {
+        target.innerHTML = `<p class="placeholder">タイトルを入れると、Goal、サブタスク、習慣、Resource候補、週次計画を提案します。</p>`;
+        return;
+    }
+
+    target.innerHTML = `
+        <section class="plan-summary">
+            <p class="eyebrow">${escapeHtml(plan.domainLabel)} / ${plan.weeks}週間目安</p>
+            <h3>${escapeHtml(plan.title)}</h3>
+            <p>${escapeHtml(plan.successCriteria)}</p>
+            <div class="task-meta">
+                <span class="status-pill">${escapeHtml(plan.area)}</span>
+                <span class="status-pill">目標日 ${escapeHtml(plan.targetDate)}</span>
+            </div>
+        </section>
+        <section class="plan-columns">
+            ${planColumn("サブタスク", plan.tasks.map((task) => `${task.title} / ${task.estimatedMinutes}分`))}
+            ${planColumn("習慣", plan.habits.map((habit) => `${habit.title} / ${habit.frequency}`))}
+            ${planColumn("Resource候補", plan.resources.map((resource) => resource.title))}
+            ${planColumn("週次計画", plan.weeklyPlan.map((week) => `Week ${week.week}: ${week.title}`))}
+        </section>
+        <div class="detail-modal-actions">
+            <button type="button" data-goal-plan-confirm>この内容で登録</button>
+            <button class="secondary-btn" type="button" data-goal-plan-clear>やり直す</button>
+        </div>
+    `;
+}
+
+function planColumn(title, items) {
+    return `
+        <div class="plan-column">
+            <h4>${escapeHtml(title)}</h4>
+            ${items.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}
+        </div>
+    `;
 }
 
 function renderHubList(state, type, elementId, items) {
@@ -687,6 +872,7 @@ function render(state) {
     renderNotes(state);
     renderKnowledgeDetail(state, state.selectedNoteId);
     renderProjectHub(state);
+    renderGoalPlanPreview(state);
     renderMetrics(state);
     renderNextAction(state);
     renderSyncStatus(state);
@@ -1811,6 +1997,7 @@ function setupDetailInteractions(state) {
 
 function setupSettings(state) {
     const refreshButton = document.getElementById("refresh-dashboard-btn");
+    const schemaCheckButton = document.getElementById("schema-check-btn");
     const clearCacheButton = document.getElementById("clear-local-cache-btn");
 
     refreshButton?.addEventListener("click", async () => {
@@ -1827,12 +2014,45 @@ function setupSettings(state) {
         }
     });
 
+    schemaCheckButton?.addEventListener("click", async () => {
+        schemaCheckButton.disabled = true;
+        schemaCheckButton.textContent = "確認中...";
+        try {
+            const result = await apiGet("getSchemaCheck");
+            renderSchemaCheckResult(result);
+            showToast(result.ok ? "Notion DB整合性はOKです。" : "不足プロパティがあります。", result.ok ? "success" : "error");
+        } catch (error) {
+            console.warn("schema check failed", error);
+            showToast("Notion DB整合性チェックに失敗しました。GASデプロイ後に再確認してください。", "error");
+        } finally {
+            schemaCheckButton.disabled = false;
+            schemaCheckButton.textContent = "Notion DB整合性チェック";
+        }
+    });
+
     clearCacheButton?.addEventListener("click", () => {
         if (!confirm("ブラウザ内の表示キャッシュをクリアしますか？Notionのデータは消えません。")) return;
         localStorage.removeItem(STORAGE_KEY);
         Object.assign(state, cloneDefaultState());
         render(state);
     });
+}
+
+function renderSchemaCheckResult(result) {
+    const target = document.getElementById("schema-check-result");
+    if (!target) return;
+    const rows = Array.isArray(result?.results) ? result.results : [];
+    target.innerHTML = rows.length
+        ? rows.map((row) => {
+            const missing = row.missingDatabaseId ? "DATABASE_ID未設定" : (row.missingProperties || []).join(", ");
+            return `
+                <article class="schema-check-item ${row.ok ? "ok" : "missing"}">
+                    <strong>${escapeHtml(row.name || row.key)}</strong>
+                    <p>${row.ok ? "OK" : escapeHtml(missing || "不足があります")}</p>
+                </article>
+            `;
+        }).join("")
+        : `<p class="placeholder">チェック結果がありません。</p>`;
 }
 
 function setupShortcutForm(state) {
@@ -1982,6 +2202,118 @@ async function saveExtendedRecord(state, type, payload, form) {
     }
 }
 
+async function commitGoalPlan(state) {
+    const plan = state.pendingGoalPlan;
+    if (!plan) return;
+
+    const goalPayload = {
+        id: `goal-${Date.now()}`,
+        ...plan.goal,
+    };
+    state.extended.goals.unshift(goalPayload);
+    saveLocalState(state);
+    render(state);
+
+    let savedGoal = goalPayload;
+    try {
+        setSyncState(state, "syncing", "GoalプランをNotionへ登録中...");
+        const result = await apiPost({ action: "saveGoal", ...goalPayload });
+        if (result.goal) {
+            state.extended.goals[0] = result.goal;
+            savedGoal = result.goal;
+        }
+    } catch (error) {
+        console.warn("saveGoal from planner fallback to localStorage", error);
+        setSyncState(state, "local", "Goalはローカル保存です。Notion保存に失敗しました。");
+    }
+
+    const goalIds = isRealPageId(savedGoal.id) ? [savedGoal.id] : [];
+    const tasks = plan.tasks.map((task, index) => ({
+        id: `task-${Date.now()}-${index}`,
+        ...task,
+        goalIds,
+        completed: false,
+    }));
+    const habits = plan.habits.map((habit, index) => ({
+        id: `habit-${Date.now()}-${index}`,
+        ...habit,
+        goalIds,
+    }));
+    const resources = plan.resources.map((resource, index) => ({
+        id: `resource-${Date.now()}-${index}`,
+        ...resource,
+        goalIds,
+    }));
+
+    state.tasks.unshift(...tasks);
+    state.extended.habits.unshift(...habits);
+    state.extended.resources.unshift(...resources);
+    state.pendingGoalPlan = null;
+    saveLocalState(state);
+    render(state);
+
+    try {
+        setSyncState(state, "syncing", "サブタスクと関連DBをNotionへ登録中...");
+        const taskResults = await Promise.all(tasks.map((task) => apiPost({ action: "saveTask", ...task })));
+        taskResults.forEach((result) => {
+            if (!result.task) return;
+            const index = state.tasks.findIndex((task) => task.id === result.task.id || task.title === result.task.title);
+            if (index !== -1) state.tasks[index] = result.task;
+        });
+        const habitResults = await Promise.all(habits.map((habit) => apiPost({ action: "saveHabit", ...habit })));
+        habitResults.forEach((result) => {
+            if (!result.habit) return;
+            const index = state.extended.habits.findIndex((habit) => habit.id === result.habit.id || habit.title === result.habit.title);
+            if (index !== -1) state.extended.habits[index] = result.habit;
+        });
+        const resourceResults = await Promise.all(resources.map((resource) => apiPost({ action: "saveResource", ...resource })));
+        resourceResults.forEach((result) => {
+            if (!result.resource) return;
+            const index = state.extended.resources.findIndex((resource) => resource.id === result.resource.id || resource.title === result.resource.title);
+            if (index !== -1) state.extended.resources[index] = result.resource;
+        });
+        setSyncState(state, "notion", "目標プランを登録しました。");
+        showToast("目標プランを登録しました。", "success");
+    } catch (error) {
+        console.warn("commitGoalPlan partial fallback", error);
+        setSyncState(state, "local", "一部はローカル保存です。Notion保存に失敗した項目があります。");
+        showToast("一部はローカル保存です。Notion保存に失敗した項目があります。", "error");
+    }
+
+    saveLocalState(state);
+    render(state);
+}
+
+function setupGoalPlanner(state) {
+    const form = document.getElementById("goal-planner-form");
+    if (!form) return;
+
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const title = document.getElementById("goal-planner-title").value.trim();
+        if (!title) return showValidation(state, "目標タイトルを入力してください。");
+        state.pendingGoalPlan = buildGoalPlan({
+            title,
+            targetDate: document.getElementById("goal-planner-target-date").value,
+            memo: document.getElementById("goal-planner-memo").value.trim(),
+        });
+        saveLocalState(state);
+        render(state);
+    });
+
+    document.getElementById("goal-plan-preview")?.addEventListener("click", async (event) => {
+        if (event.target.closest("[data-goal-plan-clear]")) {
+            state.pendingGoalPlan = null;
+            saveLocalState(state);
+            render(state);
+            return;
+        }
+        if (event.target.closest("[data-goal-plan-confirm]")) {
+            await commitGoalPlan(state);
+        }
+    });
+}
+
 function setupExtendedDbForm(state) {
     const form = document.getElementById("extended-db-form");
     if (!form) return;
@@ -2126,6 +2458,7 @@ export async function setupDashboard() {
     setupKnowledgeWorkspace(state);
     setupManagementLists(state);
     setupProjectHubInteractions(state);
+    setupGoalPlanner(state);
     setupDetailInteractions(state);
     setupShortcutForm(state);
     setupDailyReviewForm(state);
@@ -2144,6 +2477,9 @@ export async function setupDashboard() {
 }
 
 export const dashboardTestHooks = {
+    buildGoalPlan,
+    inferGoalDomain,
+    estimateGoalWeeks,
     inferArea,
     inferCategory,
     inferGenre,

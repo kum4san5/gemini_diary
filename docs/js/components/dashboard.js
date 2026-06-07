@@ -64,10 +64,10 @@ const defaultState = {
         dashboardSettings: [],
     },
     shortcuts: [
-        { title: "過去問道場", category: "応用情報", url: "https://www.ap-siken.com/apkakomon.php" },
-        { title: "Notion", category: "Knowledge", url: "https://www.notion.so/" },
-        { title: "IPA 試験情報", category: "Official", url: "https://www.ipa.go.jp/shiken/" },
-        { title: "TED", category: "English", url: "https://www.ted.com/" },
+        { id: "shortcut-default-ap", title: "過去問道場", category: "応用情報", url: "https://www.ap-siken.com/apkakomon.php" },
+        { id: "shortcut-default-notion", title: "Notion", category: "Knowledge", url: "https://www.notion.so/" },
+        { id: "shortcut-default-ipa", title: "IPA 試験情報", category: "Official", url: "https://www.ipa.go.jp/shiken/" },
+        { id: "shortcut-default-ted", title: "TED", category: "English", url: "https://www.ted.com/" },
     ],
     syncStatus: "local",
 };
@@ -92,11 +92,23 @@ function loadLocalState() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (!stored) return cloneDefaultState();
-        return { ...cloneDefaultState(), ...JSON.parse(stored) };
+        return normalizeState({ ...cloneDefaultState(), ...JSON.parse(stored) });
     } catch (error) {
         console.warn("Failed to load dashboard state", error);
         return cloneDefaultState();
     }
+}
+
+function normalizeState(state) {
+    state.shortcuts = normalizeShortcuts(state.shortcuts);
+    return state;
+}
+
+function normalizeShortcuts(shortcuts) {
+    return (shortcuts || []).map((shortcut, index) => ({
+        ...shortcut,
+        id: shortcut.id || `shortcut-local-${index + 1}`,
+    }));
 }
 
 function saveLocalState(state) {
@@ -170,7 +182,7 @@ async function loadRemoteState() {
             resources: Array.isArray(resources) ? resources : [],
             dashboardSettings: Array.isArray(dashboardSettings) ? dashboardSettings : [],
         },
-        shortcuts: Array.isArray(shortcuts) && shortcuts.length ? shortcuts : defaultState.shortcuts,
+        shortcuts: normalizeShortcuts(Array.isArray(shortcuts) && shortcuts.length ? shortcuts : defaultState.shortcuts),
         syncStatus: "notion",
     };
 }
@@ -1086,30 +1098,31 @@ async function saveTaskToNotion(state, task) {
 }
 
 async function archiveItem(state, type, pageId) {
+    const realPageId = isRealPageId(pageId);
     const config = {
         task: {
-            confirmText: "このTodoをNotion側でもアーカイブしますか？",
+            confirmText: realPageId ? "このTodoをNotion側でもアーカイブしますか？" : "このローカルTodoを表示から外しますか？",
             action: "archiveTask",
             remove: () => {
                 state.tasks = state.tasks.filter((task) => task.id !== pageId);
             },
         },
         log: {
-            confirmText: "この活動ログをNotion側でもアーカイブしますか？",
+            confirmText: realPageId ? "この活動ログをNotion側でもアーカイブしますか？" : "このローカル活動ログを表示から外しますか？",
             action: "archiveLearningLog",
             remove: () => {
                 state.logs = state.logs.filter((log) => log.id !== pageId);
             },
         },
         note: {
-            confirmText: "このナレッジをNotion側でもアーカイブしますか？",
+            confirmText: realPageId ? "このナレッジをNotion側でもアーカイブしますか？" : "このローカルナレッジを表示から外しますか？",
             action: "archiveKnowledgeNote",
             remove: () => {
                 state.notes = state.notes.filter((note) => note.id !== pageId);
             },
         },
         shortcut: {
-            confirmText: "このショートカットをNotion側でもアーカイブしますか？",
+            confirmText: realPageId ? "このショートカットをNotion側でもアーカイブしますか？" : "このローカルショートカットを表示から外しますか？",
             action: "archiveShortcut",
             remove: () => {
                 state.shortcuts = state.shortcuts.filter((shortcut) => shortcut.id !== pageId);
@@ -1123,6 +1136,12 @@ async function archiveItem(state, type, pageId) {
     config.remove();
     saveLocalState(state);
     render(state);
+
+    if (!realPageId) {
+        setSyncState(state, "local", "ローカル項目を表示から外しました。");
+        showToast("ローカル項目を表示から外しました。", "success");
+        return;
+    }
 
     try {
         setSyncState(state, "syncing", "Notionでアーカイブ中...");
@@ -1206,7 +1225,9 @@ function relationBadges(state, item) {
 }
 
 function isRealPageId(id) {
-    return Boolean(id) && !/^(task|log|note|shortcut|project|goal|habit|weeklyReview|tag|category|aiInsight|resource|dashboardSetting|review)-/.test(String(id));
+    return Boolean(id)
+        && !["undefined", "null"].includes(String(id))
+        && !/^(task|log|note|shortcut|project|goal|habit|weeklyReview|tag|category|aiInsight|resource|dashboardSetting|review)-/.test(String(id));
 }
 
 function relationOptionLabel(item, fallback = "Untitled") {

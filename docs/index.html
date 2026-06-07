@@ -189,6 +189,50 @@
                 <p id="next-action-copy" class="ai-summary">未完了Todoから、今動かす候補を表示します。</p>
             </section>
 
+            <section class="panel day-plan-panel" aria-labelledby="day-plan-heading" data-view-panel="today">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Time Design</p>
+                        <h2 id="day-plan-heading">今日の使い方</h2>
+                    </div>
+                    <button class="secondary-btn" type="button" id="day-plan-auto">おすすめ選択</button>
+                </div>
+                <form id="day-plan-settings" class="compact-form">
+                    <div class="form-row">
+                        <label>
+                            日タイプ
+                            <select id="day-plan-type">
+                                <option value="weekday">平日</option>
+                                <option value="weekend">休日</option>
+                            </select>
+                        </label>
+                        <label>
+                            バッファ分
+                            <input id="day-plan-buffer" type="number" min="0" step="5" value="5">
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>勤務開始<input id="day-plan-work-start" type="time" value="09:00"></label>
+                        <label>勤務終了<input id="day-plan-work-end" type="time" value="18:00"></label>
+                    </div>
+                    <div class="form-row">
+                        <label>自由開始<input id="day-plan-free-start" type="time" value="06:30"></label>
+                        <label>自由終了<input id="day-plan-free-end" type="time" value="23:30"></label>
+                    </div>
+                </form>
+                <div class="day-plan-layout">
+                    <div>
+                        <h3>割り当てるTodo</h3>
+                        <div id="day-plan-task-picker" class="day-plan-task-picker"></div>
+                    </div>
+                    <div>
+                        <div class="time-chart" id="day-plan-chart" aria-label="時間配分"></div>
+                        <div id="day-plan-summary" class="day-plan-summary"></div>
+                    </div>
+                </div>
+                <div id="day-plan-timeline" class="day-plan-timeline"></div>
+            </section>
+
             <section class="panel quick-log-panel" aria-labelledby="quick-log-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>

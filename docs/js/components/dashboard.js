@@ -70,6 +70,15 @@ const defaultState = {
         { id: "shortcut-default-ted", title: "TED", category: "English", url: "https://www.ted.com/" },
     ],
     syncStatus: "local",
+    dayPlan: {
+        type: "weekday",
+        workStart: "09:00",
+        workEnd: "18:00",
+        freeStart: "06:30",
+        freeEnd: "23:30",
+        bufferMinutes: 5,
+        selectedTaskIds: [],
+    },
 };
 
 const extendedDbConfig = {
@@ -101,6 +110,7 @@ function loadLocalState() {
 
 function normalizeState(state) {
     state.shortcuts = normalizeShortcuts(state.shortcuts);
+    state.dayPlan = { ...cloneDefaultState().dayPlan, ...(state.dayPlan || {}) };
     return state;
 }
 
@@ -513,6 +523,156 @@ function calculateMetrics(state) {
     return { todayMinutes, completedCount, streak, score };
 }
 
+function timeToMinutes(value) {
+    const [hours, minutes] = String(value || "00:00").split(":").map(Number);
+    return (Number.isFinite(hours) ? hours : 0) * 60 + (Number.isFinite(minutes) ? minutes : 0);
+}
+
+function minutesToTime(minutes) {
+    const normalized = Math.max(0, minutes);
+    const hours = Math.floor(normalized / 60) % 24;
+    const mins = normalized % 60;
+    return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+}
+
+function dayPlanBlocks(plan) {
+    const freeStart = timeToMinutes(plan.freeStart);
+    const freeEnd = timeToMinutes(plan.freeEnd);
+    if (freeEnd <= freeStart) return [];
+    if (plan.type === "weekend") return [{ type: "free", start: freeStart, end: freeEnd }];
+
+    const workStart = timeToMinutes(plan.workStart);
+    const workEnd = timeToMinutes(plan.workEnd);
+    return [
+        { type: "free", start: freeStart, end: Math.min(workStart, freeEnd) },
+        { type: "work", start: Math.max(workStart, freeStart), end: Math.min(workEnd, freeEnd) },
+        { type: "free", start: Math.max(workEnd, freeStart), end: freeEnd },
+    ].filter((block) => block.end > block.start);
+}
+
+function buildDayPlan(state) {
+    const plan = state.dayPlan || cloneDefaultState().dayPlan;
+    const blocks = dayPlanBlocks(plan);
+    const selectedTasks = (state.tasks || [])
+        .filter((task) => !task.completed && (plan.selectedTaskIds || []).includes(task.id));
+    const buffer = Math.max(0, Number(plan.bufferMinutes || 0));
+    const scheduled = [];
+    const freeBlocks = blocks.filter((block) => block.type === "free").map((block) => ({ ...block, cursor: block.start }));
+    let freeBlockIndex = 0;
+    let overflowMinutes = 0;
+
+    selectedTasks.forEach((task) => {
+        const duration = Math.max(5, Number(task.estimatedMinutes || task.actualMinutes || 30));
+        let remaining = duration;
+        while (remaining > 0 && freeBlockIndex < freeBlocks.length) {
+            const block = freeBlocks[freeBlockIndex];
+            const available = block.end - block.cursor;
+            if (available <= 0) {
+                freeBlockIndex += 1;
+                continue;
+            }
+            const used = Math.min(available, remaining);
+            scheduled.push({
+                task,
+                start: block.cursor,
+                end: block.cursor + used,
+                partial: used < remaining,
+            });
+            block.cursor += used;
+            remaining -= used;
+            if (remaining === 0) block.cursor += buffer;
+        }
+        overflowMinutes += remaining;
+    });
+
+    const freeMinutes = blocks.filter((block) => block.type === "free").reduce((sum, block) => sum + block.end - block.start, 0);
+    const workMinutes = blocks.filter((block) => block.type === "work").reduce((sum, block) => sum + block.end - block.start, 0);
+    const taskMinutes = scheduled.reduce((sum, item) => sum + item.end - item.start, 0);
+    const remainingFreeMinutes = Math.max(0, freeMinutes - taskMinutes - selectedTasks.length * buffer);
+
+    return { blocks, selectedTasks, scheduled, freeMinutes, workMinutes, taskMinutes, remainingFreeMinutes, overflowMinutes };
+}
+
+function recommendedDayPlanTaskIds(state) {
+    return (state.tasks || [])
+        .filter((task) => !task.completed)
+        .sort((a, b) => {
+            const priorityScore = { "今日中": 0, "なるべく早く": 1, "余裕があれば": 2 };
+            return (priorityScore[a.priority] ?? 3) - (priorityScore[b.priority] ?? 3);
+        })
+        .slice(0, 6)
+        .map((task) => task.id);
+}
+
+function renderDayPlanner(state) {
+    const form = document.getElementById("day-plan-settings");
+    const picker = document.getElementById("day-plan-task-picker");
+    const summary = document.getElementById("day-plan-summary");
+    const timeline = document.getElementById("day-plan-timeline");
+    const chart = document.getElementById("day-plan-chart");
+    if (!form || !picker || !summary || !timeline || !chart) return;
+
+    const plan = state.dayPlan;
+    document.getElementById("day-plan-type").value = plan.type;
+    document.getElementById("day-plan-buffer").value = plan.bufferMinutes;
+    document.getElementById("day-plan-work-start").value = plan.workStart;
+    document.getElementById("day-plan-work-end").value = plan.workEnd;
+    document.getElementById("day-plan-free-start").value = plan.freeStart;
+    document.getElementById("day-plan-free-end").value = plan.freeEnd;
+
+    const candidateTasks = (state.tasks || []).filter((task) => !task.completed).slice(0, 12);
+    picker.innerHTML = candidateTasks.length
+        ? candidateTasks.map((task) => `
+            <label class="day-plan-task">
+                <input type="checkbox" data-day-plan-task="${task.id}" ${(plan.selectedTaskIds || []).includes(task.id) ? "checked" : ""}>
+                <span>${escapeHtml(task.title || "Untitled Todo")}</span>
+                <small>${escapeHtml(task.priority || "未設定")} / ${Number(task.estimatedMinutes || 30)}分</small>
+            </label>
+        `).join("")
+        : `<p class="placeholder">未完了Todoがありません。</p>`;
+
+    const allocation = buildDayPlan(state);
+    const total = Math.max(1, allocation.freeMinutes + allocation.workMinutes);
+    const taskAngle = (allocation.taskMinutes / total) * 360;
+    const workAngle = ((allocation.taskMinutes + allocation.workMinutes) / total) * 360;
+    chart.style.setProperty("--task-angle", `${taskAngle}deg`);
+    chart.style.setProperty("--work-angle", `${workAngle}deg`);
+    chart.innerHTML = `<strong>${Math.round((allocation.taskMinutes / Math.max(1, allocation.freeMinutes)) * 100)}%</strong><span>自由時間使用</span>`;
+
+    summary.innerHTML = `
+        <p><strong>${allocation.taskMinutes}分</strong> / 自由時間 ${allocation.freeMinutes}分</p>
+        <p>仕事 ${allocation.workMinutes}分 / 余白 ${allocation.remainingFreeMinutes}分</p>
+        ${allocation.overflowMinutes ? `<p class="danger-text">入りきらない: ${allocation.overflowMinutes}分</p>` : ""}
+    `;
+
+    const dayStart = timeToMinutes(plan.freeStart);
+    const dayEnd = timeToMinutes(plan.freeEnd);
+    const widthBase = Math.max(1, dayEnd - dayStart);
+    const workRows = allocation.blocks
+        .filter((block) => block.type === "work")
+        .map((block) => timelineRow("仕事", block.start, block.end, "work", dayStart, widthBase));
+    const taskRows = allocation.scheduled.map((item) => timelineRow(item.task.title, item.start, item.end, "task", dayStart, widthBase));
+    timeline.innerHTML = [...workRows, ...taskRows].length
+        ? [...workRows, ...taskRows].sort((a, b) => Number(a.datasetStart) - Number(b.datasetStart)).map((row) => row.html).join("")
+        : `<p class="placeholder">Todoを選ぶとタイムチャートを表示します。</p>`;
+}
+
+function timelineRow(title, start, end, type, dayStart, widthBase) {
+    const left = ((start - dayStart) / widthBase) * 100;
+    const width = Math.max(2, ((end - start) / widthBase) * 100);
+    return {
+        datasetStart: start,
+        html: `
+            <div class="timeline-row">
+                <span>${escapeHtml(minutesToTime(start))} - ${escapeHtml(minutesToTime(end))}</span>
+                <div class="timeline-track">
+                    <b class="${type}" style="left:${left}%;width:${width}%">${escapeHtml(title)}</b>
+                </div>
+            </div>
+        `,
+    };
+}
+
 function renderTasks(state) {
     const list = document.getElementById("task-list");
     if (!list) return;
@@ -693,24 +853,24 @@ function renderGoalPlanPreview(state) {
         </section>
         <section class="plan-columns">
             ${planEditableColumn("サブタスク", "tasks", plan.tasks, (task, index) => `
-                <input data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(task.title)}">
+                ${planField("タイトル", `<input data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(task.title)}">`)}
                 <div class="form-row">
-                    <select data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="priority">${optionsHtml(["今日中", "なるべく早く", "余裕があれば"], task.priority)}</select>
-                    <input data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="estimatedMinutes" type="number" min="0" step="5" value="${escapeHtml(task.estimatedMinutes)}">
+                    ${planField("優先度", `<select data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="priority">${optionsHtml(["今日中", "なるべく早く", "余裕があれば"], task.priority)}</select>`)}
+                    ${planField("見積分", `<input data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="estimatedMinutes" type="number" min="0" step="5" value="${escapeHtml(task.estimatedMinutes)}">`)}
                 </div>
             `)}
             ${planEditableColumn("習慣", "habits", plan.habits, (habit, index) => `
-                <input data-plan-edit="habits" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(habit.title)}">
+                ${planField("タイトル", `<input data-plan-edit="habits" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(habit.title)}">`)}
                 <div class="form-row">
-                    <select data-plan-edit="habits" data-plan-index="${index}" data-plan-field="frequency">${optionsHtml(["毎日", "毎週", "週2回", "週3回"], habit.frequency)}</select>
-                    <input data-plan-edit="habits" data-plan-index="${index}" data-plan-field="targetMinutes" type="number" min="0" step="5" value="${escapeHtml(habit.targetMinutes)}">
+                    ${planField("頻度", `<select data-plan-edit="habits" data-plan-index="${index}" data-plan-field="frequency">${optionsHtml(["毎日", "毎週", "週2回", "週3回"], habit.frequency)}</select>`)}
+                    ${planField("目標分", `<input data-plan-edit="habits" data-plan-index="${index}" data-plan-field="targetMinutes" type="number" min="0" step="5" value="${escapeHtml(habit.targetMinutes)}">`)}
                 </div>
             `)}
             ${planEditableColumn("Resource候補", "resources", plan.resources, (resource, index) => `
-                <input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(resource.title)}">
-                <input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="url" type="url" placeholder="https://..." value="${escapeHtml(resource.url)}">
-                <select data-plan-edit="resources" data-plan-index="${index}" data-plan-field="type">${optionsHtml(["Webサイト", "Notionページ", "書籍", "動画", "メモ", "ローカル"], resource.type)}</select>
-                <input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="memo" value="${escapeHtml(resource.memo)}">
+                ${planField("タイトル", `<input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(resource.title)}">`)}
+                ${planField("URL", `<input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="url" type="url" placeholder="https://..." value="${escapeHtml(resource.url)}">`)}
+                ${planField("種別", `<select data-plan-edit="resources" data-plan-index="${index}" data-plan-field="type">${optionsHtml(["Webサイト", "Notionページ", "書籍", "動画", "メモ", "ローカル"], resource.type)}</select>`)}
+                ${planField("メモ", `<input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="memo" value="${escapeHtml(resource.memo)}">`)}
             `)}
             ${planColumn("週次計画", plan.weeklyPlan.map((week) => `Week ${week.week}: ${week.title}`))}
         </section>
@@ -732,6 +892,15 @@ function planEditableColumn(title, collection, items, renderItem) {
                 </div>
             `).join("") : `<p>候補なし</p>`}
         </div>
+    `;
+}
+
+function planField(label, controlHtml) {
+    return `
+        <label class="plan-field">
+            <span>${escapeHtml(label)}</span>
+            ${controlHtml}
+        </label>
     `;
 }
 
@@ -1009,6 +1178,7 @@ function renderManagementLists(state) {
 
 function render(state) {
     renderTasks(state);
+    renderDayPlanner(state);
     renderShortcuts(state);
     renderLogs(state);
     renderDailyReviews(state);
@@ -1022,6 +1192,48 @@ function render(state) {
     renderSyncStatus(state);
     renderManagementLists(state);
     populateRelationSelects(state);
+}
+
+function setupDayPlanner(state) {
+    const form = document.getElementById("day-plan-settings");
+    const picker = document.getElementById("day-plan-task-picker");
+    const autoButton = document.getElementById("day-plan-auto");
+
+    form?.addEventListener("input", () => {
+        state.dayPlan = {
+            ...state.dayPlan,
+            type: document.getElementById("day-plan-type").value,
+            bufferMinutes: Number(document.getElementById("day-plan-buffer").value || 0),
+            workStart: document.getElementById("day-plan-work-start").value,
+            workEnd: document.getElementById("day-plan-work-end").value,
+            freeStart: document.getElementById("day-plan-free-start").value,
+            freeEnd: document.getElementById("day-plan-free-end").value,
+        };
+        saveLocalState(state);
+        renderDayPlanner(state);
+    });
+
+    form?.addEventListener("change", () => {
+        saveLocalState(state);
+        renderDayPlanner(state);
+    });
+
+    picker?.addEventListener("change", (event) => {
+        const checkbox = event.target.closest("[data-day-plan-task]");
+        if (!checkbox) return;
+        const ids = new Set(state.dayPlan.selectedTaskIds || []);
+        if (checkbox.checked) ids.add(checkbox.dataset.dayPlanTask);
+        else ids.delete(checkbox.dataset.dayPlanTask);
+        state.dayPlan.selectedTaskIds = Array.from(ids);
+        saveLocalState(state);
+        renderDayPlanner(state);
+    });
+
+    autoButton?.addEventListener("click", () => {
+        state.dayPlan.selectedTaskIds = recommendedDayPlanTaskIds(state);
+        saveLocalState(state);
+        renderDayPlanner(state);
+    });
 }
 
 function setSyncState(state, status, message) {
@@ -2650,6 +2862,7 @@ export async function setupDashboard() {
     render(state);
     setupTaskForm(state);
     setupTaskList(state);
+    setupDayPlanner(state);
     setupQuickLogForm(state);
     setupLearningLogForm(state);
     setupKnowledgeForm(state);

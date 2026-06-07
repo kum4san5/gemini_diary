@@ -590,6 +590,143 @@ button:disabled {
     background: color-mix(in srgb, var(--panel-bg) 86%, var(--primary-color));
 }
 
+.day-plan-panel {
+    grid-column: span 2;
+}
+
+.day-plan-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(220px, 0.8fr);
+    gap: 16px;
+    align-items: start;
+    margin-top: 16px;
+}
+
+.day-plan-layout h3 {
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.day-plan-task-picker {
+    display: grid;
+    gap: 8px;
+}
+
+.day-plan-task {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 10px;
+    align-items: start;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-soft);
+}
+
+.day-plan-task input {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--primary-color);
+}
+
+.day-plan-task span {
+    color: var(--text-color);
+    font-weight: 800;
+}
+
+.day-plan-task small {
+    grid-column: 2;
+    color: var(--muted-color);
+    font-weight: 800;
+}
+
+.time-chart {
+    display: grid;
+    place-items: center;
+    width: 170px;
+    height: 170px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at center, var(--panel-bg) 57%, transparent 58%),
+        conic-gradient(var(--primary-color) var(--task-angle, 0deg), #8da39a var(--task-angle, 0deg) var(--work-angle, 0deg), var(--panel-soft) 0);
+}
+
+.time-chart strong {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.time-chart span {
+    margin-top: 42px;
+    color: var(--muted-color);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.day-plan-summary {
+    display: grid;
+    gap: 6px;
+}
+
+.day-plan-summary p {
+    margin: 0;
+    color: var(--muted-color);
+    font-weight: 800;
+}
+
+.day-plan-timeline {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.timeline-row {
+    display: grid;
+    grid-template-columns: 116px 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+.timeline-row > span {
+    color: var(--muted-color);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.timeline-track {
+    position: relative;
+    height: 34px;
+    border-radius: 999px;
+    background: var(--panel-soft);
+    overflow: hidden;
+}
+
+.timeline-track b {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    display: flex;
+    align-items: center;
+    min-width: 44px;
+    padding: 0 9px;
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 0.72rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.timeline-track b.task {
+    background: var(--primary-color);
+}
+
+.timeline-track b.work {
+    background: #64736c;
+}
+
 .log-panel {
     grid-column: span 2;
 }
@@ -656,6 +793,17 @@ button:disabled {
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     background: var(--panel-bg);
+}
+
+.plan-field {
+    display: grid;
+    gap: 5px;
+}
+
+.plan-field span {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--muted-color);
 }
 
 .plan-columns {
@@ -1129,14 +1277,16 @@ body.dark-mode .flatpickr-weekday {
     .log-panel,
     .projects-panel,
     .goal-detail-panel,
-    .goal-planner-panel {
+    .goal-planner-panel,
+    .day-plan-panel {
         grid-column: span 2;
         grid-row: auto;
     }
 
     .project-hub-grid,
     .goal-detail-grid,
-    .plan-columns {
+    .plan-columns,
+    .day-plan-layout {
         grid-template-columns: 1fr;
     }
 }
@@ -1179,9 +1329,14 @@ body.dark-mode .flatpickr-weekday {
     .projects-panel,
     .goal-detail-panel,
     .goal-planner-panel,
+    .day-plan-panel,
     .diary-panel,
     .history-panel {
         grid-column: span 1;
+    }
+
+    .timeline-row {
+        grid-template-columns: 1fr;
     }
 
     .metric-panel {

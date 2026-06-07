@@ -537,6 +537,15 @@ function minutesToTime(minutes) {
     return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
 
+function formatDuration(minutes) {
+    const value = Math.max(0, Number(minutes || 0));
+    const hours = Math.floor(value / 60);
+    const mins = value % 60;
+    if (hours && mins) return `${hours}時間${mins}分`;
+    if (hours) return `${hours}時間`;
+    return `${mins}分`;
+}
+
 function dayPlanBlocks(plan) {
     const freeStart = timeToMinutes(plan.freeStart);
     const freeEnd = timeToMinutes(plan.freeEnd);
@@ -674,7 +683,7 @@ function renderDayPlanner(state) {
             <label class="day-plan-task">
                 <input type="checkbox" data-day-plan-task="${task.id}" ${(plan.selectedTaskIds || []).includes(task.id) ? "checked" : ""}>
                 <span>${escapeHtml(task.title || "Untitled Todo")}</span>
-                <small>${escapeHtml(task.priority || "未設定")} / ${Number(task.estimatedMinutes || 30)}分</small>
+                <small>${escapeHtml(task.priority || "未設定")} / ${formatDuration(Number(task.estimatedMinutes || 30))}</small>
                 ${(plan.selectedTaskIds || []).includes(task.id) ? `
                     <div class="day-plan-placement">
                         <span>開始</span>
@@ -697,10 +706,10 @@ function renderDayPlanner(state) {
     chart.innerHTML = `<strong>${Math.round((allocation.taskMinutes / Math.max(1, allocation.freeMinutes)) * 100)}%</strong><span>自由時間使用</span>`;
 
     summary.innerHTML = `
-        <p><strong>${allocation.taskMinutes}分</strong> / 自由時間 ${allocation.freeMinutes}分</p>
-        <p>仕事 ${allocation.workMinutes}分 / 余白 ${allocation.remainingFreeMinutes}分</p>
-        ${allocation.conflictMinutes ? `<p class="danger-text">勤務時間と重なり: ${allocation.conflictMinutes}分</p>` : ""}
-        ${allocation.overflowMinutes ? `<p class="danger-text">入りきらない: ${allocation.overflowMinutes}分</p>` : ""}
+        <p><strong>${formatDuration(allocation.taskMinutes)}</strong> / 自由時間 ${formatDuration(allocation.freeMinutes)}</p>
+        <p>仕事 ${formatDuration(allocation.workMinutes)} / 余白 ${formatDuration(allocation.remainingFreeMinutes)}</p>
+        ${allocation.conflictMinutes ? `<p class="danger-text">勤務時間と重なり: ${formatDuration(allocation.conflictMinutes)}</p>` : ""}
+        ${allocation.overflowMinutes ? `<p class="danger-text">入りきらない: ${formatDuration(allocation.overflowMinutes)}</p>` : ""}
     `;
 
     const widthBase = Math.max(1, dayEnd - dayStart);
@@ -747,7 +756,7 @@ function renderTasks(state) {
                     <span class="status-pill">${task.area || "学習"}</span>
                     <span class="status-pill">${task.category || "未分類"}</span>
                     <span class="status-pill">${task.genre || "その他"}</span>
-                    ${task.estimatedMinutes ? `<span class="status-pill">見積 ${task.estimatedMinutes}分</span>` : ""}
+                    ${task.estimatedMinutes ? `<span class="status-pill">見積 ${formatDuration(task.estimatedMinutes)}</span>` : ""}
                 </div>
                 ${relationBadges(state, task)}
                 ${task.memo ? `<p class="task-memo">${task.memo}</p>` : ""}
@@ -1092,7 +1101,7 @@ function renderMetrics(state) {
     const streakPercent = Math.min((metrics.streak / 14) * 100, 100);
     const scoreAngle = Math.min((metrics.score / 250) * 360, 360);
 
-    document.getElementById("today-minutes").textContent = `${metrics.todayMinutes}分`;
+    document.getElementById("today-minutes").textContent = formatDuration(metrics.todayMinutes);
     document.getElementById("streak-days").textContent = `${metrics.streak}日`;
     document.getElementById("completed-count").textContent = `${metrics.completedCount}件`;
     document.getElementById("effort-score").textContent = metrics.score;
@@ -1107,7 +1116,7 @@ function renderMetrics(state) {
     if (metrics.todayMinutes === 0) {
         summary.textContent = "今日はまだ活動ログがありません。5分だけ進めると、起動のハードルが一気に下がります。";
     } else {
-        summary.textContent = `今日は${metrics.todayMinutes}分積み上がっています。次は苦手ジャンルか、未完了Todoを1つだけ動かすのがよさそうです。`;
+        summary.textContent = `今日は${formatDuration(metrics.todayMinutes)}積み上がっています。次は苦手ジャンルか、未完了Todoを1つだけ動かすのがよさそうです。`;
     }
 }
 
@@ -1277,6 +1286,7 @@ function setupDayPlanner(state) {
     picker?.addEventListener("change", (event) => {
         const checkbox = event.target.closest("[data-day-plan-task]");
         const timeInput = event.target.closest("[data-day-plan-start-time]");
+        const range = event.target.closest("[data-day-plan-start-range]");
         if (checkbox) {
             const ids = new Set(state.dayPlan.selectedTaskIds || []);
             if (checkbox.checked) ids.add(checkbox.dataset.dayPlanTask);
@@ -1289,6 +1299,9 @@ function setupDayPlanner(state) {
             state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
             if (timeInput.value) state.dayPlan.taskStarts[timeInput.dataset.dayPlanStartTime] = timeInput.value;
             else delete state.dayPlan.taskStarts[timeInput.dataset.dayPlanStartTime];
+        } else if (range) {
+            state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
+            state.dayPlan.taskStarts[range.dataset.dayPlanStartRange] = minutesToTime(Number(range.value));
         } else {
             return;
         }
@@ -1300,9 +1313,11 @@ function setupDayPlanner(state) {
         const range = event.target.closest("[data-day-plan-start-range]");
         if (!range) return;
         state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
-        state.dayPlan.taskStarts[range.dataset.dayPlanStartRange] = minutesToTime(Number(range.value));
+        const value = minutesToTime(Number(range.value));
+        state.dayPlan.taskStarts[range.dataset.dayPlanStartRange] = value;
+        const timeInput = picker.querySelector(`[data-day-plan-start-time="${CSS.escape(range.dataset.dayPlanStartRange)}"]`);
+        if (timeInput) timeInput.value = value;
         saveLocalState(state);
-        renderDayPlanner(state);
     });
 
     picker?.addEventListener("click", (event) => {
@@ -1674,8 +1689,8 @@ function openDetailModal(state, type, id) {
             ["領域", item.area],
             ["カテゴリ", item.category],
             ["ジャンル", item.genre],
-            ["見積時間", item.estimatedMinutes ? `${item.estimatedMinutes}分` : ""],
-            ["実績時間", item.actualMinutes ? `${item.actualMinutes}分` : ""],
+            ["見積時間", item.estimatedMinutes ? formatDuration(item.estimatedMinutes) : ""],
+            ["実績時間", item.actualMinutes ? formatDuration(item.actualMinutes) : ""],
             ["メモ", item.memo],
             ["リンク", item.link],
             ["関連Project", relationNames(state, item.projectIds, "projects")],
@@ -1686,7 +1701,7 @@ function openDetailModal(state, type, id) {
     } else if (type === "log") {
         body.innerHTML = detailRows([
             ["日付", item.date],
-            ["実績時間", item.minutes ? `${item.minutes}分` : ""],
+            ["実績時間", item.minutes ? formatDuration(item.minutes) : ""],
             ["領域", item.area],
             ["カテゴリ", item.category],
             ["ジャンル", item.genre],

@@ -661,7 +661,7 @@ button:disabled {
     background: var(--panel-soft);
 }
 
-.day-plan-task input {
+.day-plan-task > input {
     width: 18px;
     height: 18px;
     margin-top: 2px;
@@ -695,11 +695,13 @@ button:disabled {
 }
 
 .day-plan-placement input[type="range"] {
+    width: 100%;
     padding: 0;
     accent-color: var(--primary-color);
 }
 
 .day-plan-placement input[type="time"] {
+    width: 100%;
     min-height: 34px;
     padding: 6px 8px;
     font-size: 0.82rem;

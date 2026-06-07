@@ -22,6 +22,7 @@
             <div class="header-actions" aria-label="クイック操作">
                 <button class="action-link" type="button" data-view-jump="logs">ログを書く</button>
                 <button class="action-link" type="button" data-view-jump="knowledge">ナレッジ</button>
+                <button class="action-link" type="button" data-view-jump="projects">Projects</button>
                 <button class="action-link" type="button" data-view-jump="settings">Settings</button>
                 <button class="action-link action-link-primary" type="button" data-view-jump="today">今日のTodo</button>
             </div>
@@ -54,6 +55,7 @@
             <button class="view-tab active" type="button" data-view-tab="today">Today</button>
             <button class="view-tab" type="button" data-view-tab="knowledge">Knowledge</button>
             <button class="view-tab" type="button" data-view-tab="logs">Logs</button>
+            <button class="view-tab" type="button" data-view-tab="projects">Projects</button>
             <button class="view-tab" type="button" data-view-tab="settings">Settings</button>
         </nav>
 
@@ -410,6 +412,22 @@
                                 <option value="normal">通常メモのみ</option>
                             </select>
                         </label>
+                        <label>
+                            ジャンルで絞り込み
+                            <select id="knowledge-genre-filter">
+                                <option value="">すべて</option>
+                                <option>セキュリティ</option>
+                                <option>ネットワーク</option>
+                                <option>DB</option>
+                                <option>UI</option>
+                                <option>GAS</option>
+                                <option>Notion</option>
+                                <option>技術</option>
+                                <option>ビジネス</option>
+                                <option>自己理解</option>
+                                <option>その他</option>
+                            </select>
+                        </label>
                     </div>
                 </div>
                 <p class="knowledge-count" id="knowledge-count">0件</p>
@@ -504,6 +522,79 @@
                     <aside class="knowledge-detail-pane" id="knowledge-detail-pane">
                         <p class="placeholder">ナレッジを選ぶと詳細が表示されます。</p>
                     </aside>
+                </div>
+            </section>
+
+            <section class="panel projects-panel" id="projects-panel" aria-labelledby="projects-heading" data-view-panel="projects">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Direction</p>
+                        <h2 id="projects-heading">Projects / Goals / Resources</h2>
+                    </div>
+                    <span class="status-pill">よく使うDB</span>
+                </div>
+                <div class="project-hub-grid">
+                    <section>
+                        <h3>Projects</h3>
+                        <form id="project-form" class="compact-form">
+                            <label>名前<input id="project-title" type="text" placeholder="例: Life Dashboard 改善"></label>
+                            <div class="form-row">
+                                <label>領域<select id="project-area">
+                                    <option>開発</option>
+                                    <option>学習</option>
+                                    <option>読書</option>
+                                    <option>生活</option>
+                                    <option>その他</option>
+                                </select></label>
+                                <label>状態<input id="project-status" type="text" placeholder="進行中"></label>
+                            </div>
+                            <label>URL<input id="project-url" type="url" placeholder="https://..."></label>
+                            <label>メモ<textarea id="project-memo" placeholder="目的、次の一手、参照先など"></textarea></label>
+                            <button type="submit">Projectを追加</button>
+                        </form>
+                        <div id="project-list" class="hub-list"></div>
+                    </section>
+                    <section>
+                        <h3>Goals</h3>
+                        <form id="goal-form" class="compact-form">
+                            <label>名前<input id="goal-title" type="text" placeholder="例: 応用情報に合格する"></label>
+                            <div class="form-row">
+                                <label>領域<select id="goal-area">
+                                    <option>学習</option>
+                                    <option>開発</option>
+                                    <option>英語</option>
+                                    <option>読書</option>
+                                    <option>生活</option>
+                                    <option>その他</option>
+                                </select></label>
+                                <label>目標日<input id="goal-target-date" type="date"></label>
+                            </div>
+                            <label>成功条件<textarea id="goal-success" placeholder="何ができたら達成か"></textarea></label>
+                            <button type="submit">Goalを追加</button>
+                        </form>
+                        <div id="goal-list" class="hub-list"></div>
+                    </section>
+                    <section>
+                        <h3>Resources</h3>
+                        <form id="resource-form" class="compact-form">
+                            <label>名前<input id="resource-title" type="text" placeholder="例: 過去問道場"></label>
+                            <label>URL<input id="resource-url" type="url" placeholder="https://..."></label>
+                            <div class="form-row">
+                                <label>領域<select id="resource-area">
+                                    <option>学習</option>
+                                    <option>開発</option>
+                                    <option>英語</option>
+                                    <option>読書</option>
+                                    <option>生活</option>
+                                    <option>その他</option>
+                                </select></label>
+                                <label>種別<input id="resource-type" type="text" placeholder="Webサイト"></label>
+                            </div>
+                            <label>メモ<textarea id="resource-memo" placeholder="いつ使うか、何に役立つか"></textarea></label>
+                            <button type="submit">Resourceを追加</button>
+                        </form>
+                        <div id="resource-list" class="hub-list"></div>
+                    </section>
                 </div>
             </section>
 

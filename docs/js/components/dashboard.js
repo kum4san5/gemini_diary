@@ -349,6 +349,7 @@ function renderTasks(state) {
                     <span class="status-pill">${task.genre || "その他"}</span>
                     ${task.estimatedMinutes ? `<span class="status-pill">見積 ${task.estimatedMinutes}分</span>` : ""}
                 </div>
+                ${relationBadges(state, task)}
                 ${task.memo ? `<p class="task-memo">${task.memo}</p>` : ""}
             </article>
         `).join("")
@@ -390,6 +391,7 @@ function renderLogs(state) {
                                 <strong>${log.area || "活動"} / ${log.minutes || 0}分 / ${log.category || "未分類"} / ${log.genre || "その他"}</strong>
                                 <button class="item-action" type="button" data-detail-type="log" data-detail-id="${log.id}">詳細</button>
                             </div>
+                            ${relationBadges(state, log)}
                             <p>${log.memo || "メモなし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""}</p>
                         </article>
                     `;
@@ -409,11 +411,35 @@ function renderDailyReviews(state) {
             <article class="log-entry">
                 <div class="log-entry-header">
                     <strong>${review.date || "日付なし"} / ${review.mood || "普通"} / ${review.studyMinutes || 0}分</strong>
+                    <span class="status-pill">${(review.taskIds || []).length} Todo / ${(review.learningLogIds || []).length} Logs</span>
                 </div>
-                <p>${review.highlights || review.reflection || "レビュー本文なし"}</p>
+                <p>${review.aiSummary || review.highlights || review.reflection || "レビュー本文なし"}</p>
             </article>
         `).join("")
         : `<p class="placeholder">まだ日次レビューがありません。夜に今日を保存しましょう。</p>`;
+}
+
+function renderProjectHub(state) {
+    renderHubList(state, "project", "project-list", state.extended?.projects || []);
+    renderHubList(state, "goal", "goal-list", state.extended?.goals || []);
+    renderHubList(state, "resource", "resource-list", state.extended?.resources || []);
+}
+
+function renderHubList(state, type, elementId, items) {
+    const list = document.getElementById(elementId);
+    if (!list) return;
+    list.innerHTML = items.length
+        ? items.slice(0, 12).map((item) => `
+            <article class="hub-item">
+                <div>
+                    <strong>${escapeHtml(item.title || "Untitled")}</strong>
+                    <p>${escapeHtml([item.area, item.status || item.type || item.category, item.memo].filter(Boolean).join(" / "))}</p>
+                    ${relationBadges(state, item)}
+                </div>
+                <button class="item-action danger-text" type="button" data-extended-archive="${type}" data-page-id="${item.id}">アーカイブ</button>
+            </article>
+        `).join("")
+        : `<p class="placeholder">まだありません。</p>`;
 }
 
 function renderNotes(state) {
@@ -423,6 +449,7 @@ function renderNotes(state) {
     const search = document.getElementById("knowledge-search")?.value.trim().toLowerCase() || "";
     const areaFilter = document.getElementById("knowledge-area-filter")?.value || "";
     const actionFilter = document.getElementById("knowledge-action-filter")?.value || "";
+    const genreFilter = document.getElementById("knowledge-genre-filter")?.value || "";
     const filtered = state.notes.filter((note) => {
         const tags = Array.isArray(note.tags) ? note.tags.join(",") : note.tags || "";
         const haystack = [
@@ -438,6 +465,7 @@ function renderNotes(state) {
 
         if (search && !haystack.includes(search)) return false;
         if (areaFilter && note.area !== areaFilter) return false;
+        if (genreFilter && note.genre !== genreFilter) return false;
         if (actionFilter === "actionable" && !note.actionable) return false;
         if (actionFilter === "normal" && note.actionable) return false;
         return true;
@@ -461,6 +489,7 @@ function renderNotes(state) {
                         <span class="status-pill">${note.genre || "その他"}</span>
                         ${note.actionable ? `<span class="priority-pill">実行候補</span>` : ""}
                     </div>
+                    ${relationBadges(state, note)}
                     <p>${note.summary || note.body || "本文なし"}${tags ? ` #${String(tags).replaceAll(",", " #")}` : ""} ${url}</p>
                     ${note.actionable && note.actionText ? `<button class="item-action" type="button" data-note-create-task="${note.id}">Todoにする</button>` : ""}
                 </article>
@@ -499,6 +528,11 @@ function renderKnowledgeDetail(state, noteId) {
             ["本文", note.body],
             ["タグ", tags],
             ["参照URL", note.sourceUrl],
+            ["関連Project", relationNames(state, note.projectIds, "projects")],
+            ["関連Goal", relationNames(state, note.goalIds, "goals")],
+            ["関連Resource", relationNames(state, note.resourceIds, "resources")],
+            ["関連Todo", taskNames(state, note.relatedTaskIds || (note.relatedTaskId ? [note.relatedTaskId] : []))],
+            ["関連ログ", logNames(state, note.relatedLogIds || (note.relatedLogId ? [note.relatedLogId] : []))],
             ["実行メモ", note.actionText],
         ])}
         <div class="detail-modal-actions">
@@ -652,6 +686,7 @@ function render(state) {
     renderDailyReviews(state);
     renderNotes(state);
     renderKnowledgeDetail(state, state.selectedNoteId);
+    renderProjectHub(state);
     renderMetrics(state);
     renderNextAction(state);
     renderSyncStatus(state);
@@ -727,6 +762,19 @@ function todayRelationIds(state) {
         .map((log) => log.id)
         .filter((id) => id && !id.startsWith("log-"));
     return { taskIds, learningLogIds };
+}
+
+function buildDailySummary(state, review) {
+    const today = review.date || todayKey();
+    const todayTasks = state.tasks.filter((task) => normalizeDateKey(task.createdAt) === today || normalizeDateKey(task.updatedAt) === today || normalizeDateKey(task.completedAt) === today);
+    const todayLogs = state.logs.filter((log) => normalizeDateKey(log.date) === today);
+    const todayNotes = state.notes.filter((note) => normalizeDateKey(note.createdAt) === today || normalizeDateKey(note.updatedAt) === today);
+    const nextTask = state.tasks.find((task) => !task.completed);
+    return [
+        `${review.studyMinutes || 0}分の活動、完了Todo ${review.completedTasks || 0}件。`,
+        `今日動いたTodo ${todayTasks.length}件、活動ログ ${todayLogs.length}件、ナレッジ ${todayNotes.length}件。`,
+        nextTask ? `次の一手候補は「${nextTask.title}」。` : "未完了Todoはありません。",
+    ].join(" ");
 }
 
 async function refreshFromNotion(state) {
@@ -821,6 +869,52 @@ function escapeHtml(value) {
 
 function tagText(tags) {
     return Array.isArray(tags) ? tags.join(", ") : String(tags || "");
+}
+
+function findExtendedItem(state, stateKey, id) {
+    return (state.extended?.[stateKey] || []).find((item) => item.id === id);
+}
+
+function relationNames(state, ids, stateKey, fallbackLabel) {
+    return (ids || [])
+        .map((id) => findExtendedItem(state, stateKey, id)?.title || fallbackLabel || id)
+        .filter(Boolean)
+        .join(", ");
+}
+
+function taskNames(state, ids) {
+    return (ids || [])
+        .map((id) => state.tasks.find((task) => task.id === id)?.title || id)
+        .filter(Boolean)
+        .join(", ");
+}
+
+function logNames(state, ids) {
+    return (ids || [])
+        .map((id) => {
+            const log = state.logs.find((item) => item.id === id);
+            return log ? `${log.date || "日付なし"} ${log.category || log.memo || "活動ログ"}` : id;
+        })
+        .filter(Boolean)
+        .join(", ");
+}
+
+function noteNames(state, ids) {
+    return (ids || [])
+        .map((id) => state.notes.find((note) => note.id === id)?.title || id)
+        .filter(Boolean)
+        .join(", ");
+}
+
+function relationBadges(state, item) {
+    const labels = [
+        relationNames(state, item.projectIds, "projects"),
+        relationNames(state, item.goalIds, "goals"),
+        relationNames(state, item.resourceIds, "resources"),
+    ].filter(Boolean);
+    return labels.length
+        ? `<div class="relation-badges">${labels.map((label) => `<span class="status-pill">${escapeHtml(label)}</span>`).join("")}</div>`
+        : "";
 }
 
 function isRealPageId(id) {
@@ -949,6 +1043,10 @@ function openDetailModal(state, type, id) {
             ["実績時間", item.actualMinutes ? `${item.actualMinutes}分` : ""],
             ["メモ", item.memo],
             ["リンク", item.link],
+            ["関連Project", relationNames(state, item.projectIds, "projects")],
+            ["関連Goal", relationNames(state, item.goalIds, "goals")],
+            ["関連Resource", relationNames(state, item.resourceIds, "resources")],
+            ["由来ナレッジ", noteNames(state, item.knowledgeNoteIds)],
         ]);
     } else if (type === "log") {
         body.innerHTML = detailRows([
@@ -961,6 +1059,10 @@ function openDetailModal(state, type, id) {
             ["エネルギー", item.energy],
             ["タグ", tagText(item.tags)],
             ["メモ", item.memo],
+            ["関連Todo", taskNames(state, item.relatedTaskIds || (item.relatedTaskId ? [item.relatedTaskId] : []))],
+            ["関連Project", relationNames(state, item.projectIds, "projects")],
+            ["関連Goal", relationNames(state, item.goalIds, "goals")],
+            ["関連Resource", relationNames(state, item.resourceIds, "resources")],
         ]);
     } else {
         body.innerHTML = detailRows([
@@ -973,6 +1075,11 @@ function openDetailModal(state, type, id) {
             ["本文", item.body],
             ["実行候補", item.actionable ? "はい" : "いいえ"],
             ["実行メモ", item.actionText],
+            ["関連Todo", taskNames(state, item.relatedTaskIds || (item.relatedTaskId ? [item.relatedTaskId] : []))],
+            ["関連ログ", logNames(state, item.relatedLogIds || (item.relatedLogId ? [item.relatedLogId] : []))],
+            ["関連Project", relationNames(state, item.projectIds, "projects")],
+            ["関連Goal", relationNames(state, item.goalIds, "goals")],
+            ["関連Resource", relationNames(state, item.resourceIds, "resources")],
         ]);
     }
 
@@ -993,20 +1100,52 @@ function closeEditModal() {
     document.getElementById("edit-modal")?.classList.add("hidden");
 }
 
-async function createTaskFromNote(state, noteId) {
+function buildNoteTaskForm(note) {
+    return `
+        <input type="hidden" name="type" value="noteTask">
+        <input type="hidden" name="noteId" value="${escapeHtml(note.id)}">
+        <label>Todo<input name="title" type="text" value="${escapeHtml(note.actionText || note.title || note.summary || "")}"></label>
+        <div class="form-row">
+            <label>優先度<select name="priority">${optionsHtml(["今日中", "なるべく早く", "余裕があれば"], "なるべく早く")}</select></label>
+            <label>見積時間<input name="estimatedMinutes" type="number" min="0" step="5" value="0"></label>
+        </div>
+        <label>リンク<input name="link" type="url" value="${escapeHtml(note.sourceUrl || "")}"></label>
+        <label>メモ<textarea name="memo">${escapeHtml(`ナレッジ由来: ${note.title || note.summary || ""}`)}</textarea></label>
+        <div class="edit-actions">
+            <button type="submit">Todoを作成</button>
+            <button class="secondary-btn" type="button" data-edit-close>キャンセル</button>
+        </div>
+    `;
+}
+
+function createTaskFromNote(state, noteId) {
     const note = findItem(state, "note", noteId);
+    if (!note || !note.actionText) return;
+
+    const modal = document.getElementById("edit-modal");
+    const form = document.getElementById("edit-form");
+    if (!modal || !form) return;
+
+    document.getElementById("edit-modal-type").textContent = "Knowledge";
+    document.getElementById("edit-modal-title").textContent = "ナレッジからTodoを作成";
+    form.innerHTML = buildNoteTaskForm(note);
+    closeDetailModal();
+    modal.classList.remove("hidden");
+}
+
+async function saveTaskFromNote(state, note, formData) {
     if (!note || !note.actionText) return;
 
     const task = {
         id: `task-${Date.now()}`,
-        title: note.actionText,
-        priority: "なるべく早く",
+        title: String(formData.get("title") || "").trim(),
+        priority: String(formData.get("priority") || "なるべく早く"),
         area: note.area === "応用情報" ? "学習" : note.area,
         category: note.category === "問題解説" ? "苦手復習" : "知識整理",
         genre: note.genre || "その他",
-        estimatedMinutes: 0,
-        memo: `ナレッジ由来: ${note.title || note.summary || ""}`,
-        link: note.sourceUrl || "",
+        estimatedMinutes: Number(formData.get("estimatedMinutes") || 0),
+        memo: String(formData.get("memo") || "").trim(),
+        link: String(formData.get("link") || "").trim(),
         status: "準備中",
         completed: false,
         knowledgeNoteIds: isRealPageId(note.id) ? [note.id] : [],
@@ -1015,12 +1154,14 @@ async function createTaskFromNote(state, noteId) {
         resourceIds: note.resourceIds || [],
     };
 
+    if (!validateTaskInput(state, task)) return;
     state.tasks.unshift(task);
     saveLocalState(state);
     render(state);
 
     try {
         await saveTaskToNotion(state, task);
+        closeEditModal();
         showToast("Todoを作成しました。", "success");
     } catch (error) {
         console.warn("createTaskFromNote fallback to localStorage", error);
@@ -1160,6 +1301,12 @@ function editItem(state, type, id) {
 async function saveEditedItem(state, form) {
     const formData = new FormData(form);
     const type = formData.get("type");
+    if (type === "noteTask") {
+        const note = findItem(state, "note", formData.get("noteId"));
+        await saveTaskFromNote(state, note, formData);
+        return;
+    }
+
     const id = formData.get("id");
     const item = findItem(state, type, id);
     if (!item) return;
@@ -1569,6 +1716,7 @@ function setupKnowledgeFilters(state) {
         document.getElementById("knowledge-search"),
         document.getElementById("knowledge-area-filter"),
         document.getElementById("knowledge-action-filter"),
+        document.getElementById("knowledge-genre-filter"),
     ].forEach((input) => {
         input?.addEventListener("input", () => renderNotes(state));
         input?.addEventListener("change", () => renderNotes(state));
@@ -1603,6 +1751,14 @@ function setupManagementLists(state) {
         if (editButton) {
             editItem(state, editButton.dataset.manageEdit, editButton.dataset.pageId);
         }
+    });
+}
+
+function setupProjectHubInteractions(state) {
+    document.getElementById("projects-panel")?.addEventListener("click", (event) => {
+        const archiveButton = event.target.closest("[data-extended-archive]");
+        if (!archiveButton) return;
+        archiveExtendedItem(state, archiveButton.dataset.extendedArchive, archiveButton.dataset.pageId);
     });
 }
 
@@ -1744,6 +1900,7 @@ function setupDailyReviewForm(state) {
             taskIds: relations.taskIds,
             learningLogIds: relations.learningLogIds,
         };
+        review.aiSummary = buildDailySummary(state, review);
 
         if (!review.highlights && !review.reflection && !review.tomorrow) {
             showValidation(state, "日次レビューは、よかったこと・振り返り・明日の一手のどれかを入力してください。");
@@ -1798,6 +1955,33 @@ function buildExtendedPayload(state) {
     return base;
 }
 
+async function saveExtendedRecord(state, type, payload, form) {
+    const config = extendedDbConfig[type];
+    if (!config) return;
+    if (!payload.title) return showValidation(state, "名前は必須です。");
+    if (payload.url && !isValidUrl(payload.url)) return showValidation(state, "URLはURL形式で入力してください。");
+
+    state.extended[config.stateKey].unshift(payload);
+    saveLocalState(state);
+    render(state);
+    form?.reset();
+
+    try {
+        setSyncState(state, "syncing", `${config.label} をNotionへ保存中...`);
+        const result = await apiPost({ action: config.saveAction, ...payload });
+        const saved = result[type] || result[config.stateKey.replace(/s$/, "")] || Object.values(result).find((value) => value && value.id);
+        if (saved) state.extended[config.stateKey][0] = saved;
+        setSyncState(state, "notion", `${config.label} を保存しました。`);
+        saveLocalState(state);
+        render(state);
+        showToast(`${config.label} に追加しました。`, "success");
+    } catch (error) {
+        console.warn(`${config.saveAction} fallback to localStorage`, error);
+        setSyncState(state, "local", `${config.label} はローカル保存です。Notion保存に失敗しました。`);
+        render(state);
+    }
+}
+
 function setupExtendedDbForm(state) {
     const form = document.getElementById("extended-db-form");
     if (!form) return;
@@ -1809,28 +1993,66 @@ function setupExtendedDbForm(state) {
         if (!config) return;
 
         const payload = buildExtendedPayload(state);
-        if (!payload.title) return showValidation(state, "名前は必須です。");
-        if (payload.url && !isValidUrl(payload.url)) return showValidation(state, "URLはURL形式で入力してください。");
+        await saveExtendedRecord(state, type, payload, form);
+    });
+}
 
-        state.extended[config.stateKey].unshift(payload);
-        saveLocalState(state);
-        render(state);
-        form.reset();
+function setupProjectHubForms(state) {
+    document.getElementById("project-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = document.getElementById("project-title").value.trim();
+        const area = document.getElementById("project-area").value;
+        const status = document.getElementById("project-status").value.trim() || "進行中";
+        const url = document.getElementById("project-url").value.trim();
+        const memo = document.getElementById("project-memo").value.trim();
+        await saveExtendedRecord(state, "project", {
+            id: `project-${Date.now()}`,
+            title,
+            area,
+            status,
+            priority: "中",
+            url,
+            githubUrl: url,
+            memo,
+        }, event.target);
+    });
 
-        try {
-            setSyncState(state, "syncing", `${config.label} をNotionへ保存中...`);
-            const result = await apiPost({ action: config.saveAction, ...payload });
-            const saved = result[type] || result[config.stateKey.replace(/s$/, "")] || Object.values(result).find((value) => value && value.id);
-            if (saved) state.extended[config.stateKey][0] = saved;
-            setSyncState(state, "notion", `${config.label} を保存しました。`);
-            saveLocalState(state);
-            render(state);
-            showToast(`${config.label} に追加しました。`, "success");
-        } catch (error) {
-            console.warn(`${config.saveAction} fallback to localStorage`, error);
-            setSyncState(state, "local", `${config.label} はローカル保存です。Notion保存に失敗しました。`);
-            render(state);
-        }
+    document.getElementById("goal-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = document.getElementById("goal-title").value.trim();
+        const area = document.getElementById("goal-area").value;
+        const targetDate = document.getElementById("goal-target-date").value;
+        const successCriteria = document.getElementById("goal-success").value.trim();
+        await saveExtendedRecord(state, "goal", {
+            id: `goal-${Date.now()}`,
+            title,
+            area,
+            targetDate,
+            status: "未着手",
+            priority: "中",
+            progress: 0,
+            successCriteria,
+            memo: successCriteria,
+        }, event.target);
+    });
+
+    document.getElementById("resource-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = document.getElementById("resource-title").value.trim();
+        const url = document.getElementById("resource-url").value.trim();
+        const area = document.getElementById("resource-area").value;
+        const type = document.getElementById("resource-type").value.trim() || "Webサイト";
+        const memo = document.getElementById("resource-memo").value.trim();
+        await saveExtendedRecord(state, "resource", {
+            id: `resource-${Date.now()}`,
+            title,
+            url,
+            area,
+            type,
+            category: "その他",
+            tags: "",
+            memo,
+        }, event.target);
     });
 }
 
@@ -1903,10 +2125,12 @@ export async function setupDashboard() {
     setupKnowledgeFilters(state);
     setupKnowledgeWorkspace(state);
     setupManagementLists(state);
+    setupProjectHubInteractions(state);
     setupDetailInteractions(state);
     setupShortcutForm(state);
     setupDailyReviewForm(state);
     setupExtendedDbForm(state);
+    setupProjectHubForms(state);
     setupSettings(state);
     setupViewTabs();
 

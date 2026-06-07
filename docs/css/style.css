@@ -602,6 +602,61 @@ button:disabled {
     grid-column: span 1;
 }
 
+.projects-panel {
+    grid-column: span 3;
+}
+
+.project-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+}
+
+.project-hub-grid section,
+.hub-item {
+    display: grid;
+    gap: 10px;
+    padding: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--panel-soft);
+}
+
+.project-hub-grid h3 {
+    margin-bottom: 0;
+    font-size: 0.95rem;
+}
+
+.hub-list {
+    display: grid;
+    gap: 8px;
+}
+
+.hub-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    background: var(--panel-bg);
+}
+
+.hub-item strong,
+.hub-item p {
+    min-width: 0;
+}
+
+.hub-item p {
+    margin-bottom: 0;
+    color: var(--muted-color);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.relation-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
 .settings-actions {
     display: grid;
     gap: 10px;
@@ -960,9 +1015,14 @@ body.dark-mode .flatpickr-weekday {
     }
 
     .todo-panel,
-    .log-panel {
+    .log-panel,
+    .projects-panel {
         grid-column: span 2;
         grid-row: auto;
+    }
+
+    .project-hub-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1001,6 +1061,7 @@ body.dark-mode .flatpickr-weekday {
     .log-panel,
     .settings-panel,
     .knowledge-panel,
+    .projects-panel,
     .diary-panel,
     .history-panel {
         grid-column: span 1;

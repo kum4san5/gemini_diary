@@ -365,37 +365,64 @@ function buildGoalPlan(input) {
         qualification: {
             tasks: ["出題範囲と教材を確認する", "頻出分野を1周する", "過去問を解いて弱点を洗い出す", "弱点分野を復習する", "模擬試験で時間配分を確認する"],
             habits: ["毎日15分の学習ログを残す", "週1回、苦手分野を整理する"],
-            resources: ["公式試験情報", "過去問/問題演習サイト", "要点整理ノート"],
+            resources: [
+                { title: "公式試験情報", type: "Webサイト", url: "https://www.ipa.go.jp/shiken/", memo: "試験日、出題範囲、公式情報を確認する" },
+                { title: "過去問道場", type: "Webサイト", url: "https://www.ap-siken.com/apkakomon.php", memo: "過去問演習と弱点確認に使う" },
+                { title: "要点整理ノート", type: "Notionページ", url: "", memo: "頻出分野、間違えた問題、覚えることを集約する" },
+            ],
         },
         health: {
             tasks: ["現状の体重・食事・運動を記録する", "無理のない食事ルールを決める", "週の運動メニューを決める", "停滞時の見直し条件を決める"],
             habits: ["毎日体重か食事を1つ記録する", "週3回、短い運動をする"],
-            resources: ["食事記録ルール", "運動メニュー", "体調メモ"],
+            resources: [
+                { title: "食事記録ルール", type: "メモ", url: "", memo: "何を記録するか、どこまで厳密に見るかを決める" },
+                { title: "運動メニュー", type: "メモ", url: "", memo: "週に実行する運動メニューをまとめる" },
+                { title: "体調メモ", type: "Notionページ", url: "", memo: "睡眠、疲労、体重変化を見返す場所" },
+            ],
         },
         project: {
             tasks: ["目的と完成条件を1文で決める", "必要機能を洗い出す", "最小版を実装する", "動作確認と改善をする", "公開/共有まで進める"],
             habits: ["週2回、開発ログを残す", "詰まりをナレッジ化する"],
-            resources: ["GitHub/リポジトリ", "仕様メモ", "参考実装"],
+            resources: [
+                { title: "GitHub / リポジトリ", type: "Webサイト", url: "", memo: "コード、Issue、変更履歴を見る場所" },
+                { title: "仕様メモ", type: "Notionページ", url: "", memo: "目的、画面、DB、API、決定事項をまとめる" },
+                { title: "参考実装", type: "Webサイト", url: "", memo: "似た機能やUIの参考リンクを置く" },
+            ],
         },
         creative: {
             tasks: ["作品のテーマと完成形を決める", "構成案を作る", "初稿/初版を作る", "見直しポイントを整理する", "公開または保存する"],
             habits: ["週2回、制作時間を記録する", "アイデアをナレッジに残す"],
-            resources: ["参考作品", "構成メモ", "公開先"],
+            resources: [
+                { title: "参考作品", type: "Webサイト", url: "", memo: "方向性や品質基準の参考にする" },
+                { title: "構成メモ", type: "Notionページ", url: "", memo: "テーマ、構成、下書きをまとめる" },
+                { title: "公開先", type: "Webサイト", url: "", memo: "完成物を公開・保存する場所" },
+            ],
         },
         money: {
             tasks: ["現状の収入・支出をざっくり把握する", "目標金額と期限を決める", "増やす/減らす行動を3つ選ぶ", "週次で数字を確認する"],
             habits: ["週1回、お金のログを確認する", "支出メモを残す"],
-            resources: ["家計メモ", "収入候補リスト", "固定費チェックリスト"],
+            resources: [
+                { title: "家計メモ", type: "Notionページ", url: "", memo: "収入、支出、固定費をまとめる" },
+                { title: "収入候補リスト", type: "メモ", url: "", memo: "試したい副業、仕事、改善案を並べる" },
+                { title: "固定費チェックリスト", type: "メモ", url: "", memo: "見直す固定費と判断結果を残す" },
+            ],
         },
         language: {
             tasks: ["現在地を確認する", "単語・文法・リスニングの配分を決める", "教材を1つ選ぶ", "週ごとの練習量を決める", "成果確認の小テストを入れる"],
             habits: ["毎日10分、英語に触れる", "週1回、できた表現をナレッジ化する"],
-            resources: ["単語帳", "リスニング教材", "英語日記"],
+            resources: [
+                { title: "単語帳", type: "Webサイト", url: "", memo: "語彙を積み上げる教材" },
+                { title: "リスニング教材", type: "動画", url: "https://www.ted.com/", memo: "聞く練習と表現収集に使う" },
+                { title: "英語日記", type: "Notionページ", url: "", memo: "書いた英文と添削結果を蓄積する" },
+            ],
         },
         general: {
             tasks: ["成功条件を決める", "必要な行動を洗い出す", "最初の1週間で試す", "週次で進め方を見直す"],
             habits: ["週1回、進捗を確認する"],
-            resources: ["参考メモ", "チェックリスト"],
+            resources: [
+                { title: "参考メモ", type: "メモ", url: "", memo: "関連情報や考えたことをまとめる" },
+                { title: "チェックリスト", type: "Notionページ", url: "", memo: "進める条件、確認項目、完了条件を置く" },
+            ],
         },
     };
 
@@ -439,11 +466,12 @@ function buildGoalPlan(input) {
             memo: `${title} を進めるための習慣`,
         })),
         resources: template.resources.map((resource) => ({
-            title: resource,
+            title: resource.title,
             area,
-            type: "メモ",
+            type: resource.type || "Webサイト",
+            url: resource.url || "",
             category: goalDomainLabel(domain),
-            memo: `${title} に関連するResource候補`,
+            memo: resource.memo || `${title} に関連するResource候補`,
         })),
         weeklyPlan: Array.from({ length: Math.min(weeks, 8) }, (_, index) => ({
             week: index + 1,
@@ -630,7 +658,7 @@ function renderGoalDetail(state) {
         ])}
         ${goalDetailSection("関連Todo", tasks.map((task) => `${task.completed ? "完了" : "未完了"}: ${task.title}`))}
         ${goalDetailSection("習慣", habits.map((habit) => `${habit.title} / ${habit.frequency || "頻度未設定"}`))}
-        ${goalDetailSection("Resource", resources.map((resource) => resource.title || resource.url || "Untitled Resource"))}
+        ${goalDetailSection("Resource", resources.map((resource) => [resource.title || "Untitled Resource", resource.type, resource.url].filter(Boolean).join(" / ")))}
         ${goalDetailSection("活動ログ", logs.map((log) => `${log.date || "日付なし"} / ${log.minutes || 0}分 / ${log.memo || log.category || "ログ"}`))}
     `;
 }
@@ -680,6 +708,8 @@ function renderGoalPlanPreview(state) {
             `)}
             ${planEditableColumn("Resource候補", "resources", plan.resources, (resource, index) => `
                 <input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(resource.title)}">
+                <input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="url" type="url" placeholder="https://..." value="${escapeHtml(resource.url)}">
+                <select data-plan-edit="resources" data-plan-index="${index}" data-plan-field="type">${optionsHtml(["Webサイト", "Notionページ", "書籍", "動画", "メモ", "ローカル"], resource.type)}</select>
                 <input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="memo" value="${escapeHtml(resource.memo)}">
             `)}
             ${planColumn("週次計画", plan.weeklyPlan.map((week) => `Week ${week.week}: ${week.title}`))}

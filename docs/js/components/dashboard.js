@@ -78,6 +78,7 @@ const defaultState = {
         freeEnd: "23:30",
         bufferMinutes: 5,
         selectedTaskIds: [],
+        taskStarts: {},
     },
 };
 
@@ -111,6 +112,7 @@ function loadLocalState() {
 function normalizeState(state) {
     state.shortcuts = normalizeShortcuts(state.shortcuts);
     state.dayPlan = { ...cloneDefaultState().dayPlan, ...(state.dayPlan || {}) };
+    state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
     return state;
 }
 
@@ -557,11 +559,31 @@ function buildDayPlan(state) {
         .filter((task) => !task.completed && (plan.selectedTaskIds || []).includes(task.id));
     const buffer = Math.max(0, Number(plan.bufferMinutes || 0));
     const scheduled = [];
-    const freeBlocks = blocks.filter((block) => block.type === "free").map((block) => ({ ...block, cursor: block.start }));
-    let freeBlockIndex = 0;
+    const dayStart = timeToMinutes(plan.freeStart);
+    const dayEnd = timeToMinutes(plan.freeEnd);
+    const manualRanges = [];
+    const manualTasks = selectedTasks.filter((task) => plan.taskStarts?.[task.id]);
+    const autoTasks = selectedTasks.filter((task) => !plan.taskStarts?.[task.id]);
     let overflowMinutes = 0;
+    let conflictMinutes = 0;
 
-    selectedTasks.forEach((task) => {
+    manualTasks.forEach((task) => {
+        const duration = Math.max(5, Number(task.estimatedMinutes || task.actualMinutes || 30));
+        const preferredStart = timeToMinutes(plan.taskStarts[task.id]);
+        const start = Math.min(Math.max(preferredStart, dayStart), Math.max(dayStart, dayEnd - duration));
+        const end = Math.min(start + duration, dayEnd);
+        const conflict = overlapsAny({ start, end }, blocks.filter((block) => block.type === "work"));
+        conflictMinutes += conflict ? end - start : 0;
+        scheduled.push({ task, start, end, manual: true, conflict });
+        manualRanges.push({ start, end: end + buffer });
+        overflowMinutes += Math.max(0, duration - (end - start));
+    });
+
+    const freeBlocks = subtractRanges(blocks.filter((block) => block.type === "free"), manualRanges)
+        .map((block) => ({ ...block, cursor: block.start }));
+    let freeBlockIndex = 0;
+
+    autoTasks.forEach((task) => {
         const duration = Math.max(5, Number(task.estimatedMinutes || task.actualMinutes || 30));
         let remaining = duration;
         while (remaining > 0 && freeBlockIndex < freeBlocks.length) {
@@ -577,6 +599,7 @@ function buildDayPlan(state) {
                 start: block.cursor,
                 end: block.cursor + used,
                 partial: used < remaining,
+                manual: false,
             });
             block.cursor += used;
             remaining -= used;
@@ -590,7 +613,27 @@ function buildDayPlan(state) {
     const taskMinutes = scheduled.reduce((sum, item) => sum + item.end - item.start, 0);
     const remainingFreeMinutes = Math.max(0, freeMinutes - taskMinutes - selectedTasks.length * buffer);
 
-    return { blocks, selectedTasks, scheduled, freeMinutes, workMinutes, taskMinutes, remainingFreeMinutes, overflowMinutes };
+    return { blocks, selectedTasks, scheduled, freeMinutes, workMinutes, taskMinutes, remainingFreeMinutes, overflowMinutes, conflictMinutes };
+}
+
+function overlapsAny(range, ranges) {
+    return ranges.some((item) => range.start < item.end && range.end > item.start);
+}
+
+function subtractRanges(blocks, ranges) {
+    return blocks.flatMap((block) => {
+        let segments = [{ ...block }];
+        ranges.forEach((range) => {
+            segments = segments.flatMap((segment) => {
+                if (range.end <= segment.start || range.start >= segment.end) return [segment];
+                return [
+                    { ...segment, end: Math.max(segment.start, range.start) },
+                    { ...segment, start: Math.min(segment.end, range.end) },
+                ].filter((item) => item.end > item.start);
+            });
+        });
+        return segments;
+    });
 }
 
 function recommendedDayPlanTaskIds(state) {
@@ -621,14 +664,28 @@ function renderDayPlanner(state) {
     document.getElementById("day-plan-free-end").value = plan.freeEnd;
 
     const candidateTasks = (state.tasks || []).filter((task) => !task.completed).slice(0, 12);
+    const dayStart = timeToMinutes(plan.freeStart);
+    const dayEnd = timeToMinutes(plan.freeEnd);
     picker.innerHTML = candidateTasks.length
-        ? candidateTasks.map((task) => `
+        ? candidateTasks.map((task) => {
+            const duration = Math.max(5, Number(task.estimatedMinutes || task.actualMinutes || 30));
+            const latestStart = Math.max(dayStart, dayEnd - duration);
+            return `
             <label class="day-plan-task">
                 <input type="checkbox" data-day-plan-task="${task.id}" ${(plan.selectedTaskIds || []).includes(task.id) ? "checked" : ""}>
                 <span>${escapeHtml(task.title || "Untitled Todo")}</span>
                 <small>${escapeHtml(task.priority || "未設定")} / ${Number(task.estimatedMinutes || 30)}分</small>
+                ${(plan.selectedTaskIds || []).includes(task.id) ? `
+                    <div class="day-plan-placement">
+                        <span>開始</span>
+                        <input type="range" data-day-plan-start-range="${task.id}" min="${dayStart}" max="${latestStart}" step="5" value="${timeToMinutes(plan.taskStarts?.[task.id] || plan.freeStart)}">
+                        <input type="time" data-day-plan-start-time="${task.id}" value="${escapeHtml(plan.taskStarts?.[task.id] || "")}">
+                        <button class="item-action" type="button" data-day-plan-auto-task="${task.id}">自動</button>
+                    </div>
+                ` : ""}
             </label>
-        `).join("")
+        `;
+        }).join("")
         : `<p class="placeholder">未完了Todoがありません。</p>`;
 
     const allocation = buildDayPlan(state);
@@ -642,22 +699,21 @@ function renderDayPlanner(state) {
     summary.innerHTML = `
         <p><strong>${allocation.taskMinutes}分</strong> / 自由時間 ${allocation.freeMinutes}分</p>
         <p>仕事 ${allocation.workMinutes}分 / 余白 ${allocation.remainingFreeMinutes}分</p>
+        ${allocation.conflictMinutes ? `<p class="danger-text">勤務時間と重なり: ${allocation.conflictMinutes}分</p>` : ""}
         ${allocation.overflowMinutes ? `<p class="danger-text">入りきらない: ${allocation.overflowMinutes}分</p>` : ""}
     `;
 
-    const dayStart = timeToMinutes(plan.freeStart);
-    const dayEnd = timeToMinutes(plan.freeEnd);
     const widthBase = Math.max(1, dayEnd - dayStart);
     const workRows = allocation.blocks
         .filter((block) => block.type === "work")
         .map((block) => timelineRow("仕事", block.start, block.end, "work", dayStart, widthBase));
-    const taskRows = allocation.scheduled.map((item) => timelineRow(item.task.title, item.start, item.end, "task", dayStart, widthBase));
+    const taskRows = allocation.scheduled.map((item) => timelineRow(item.task.title, item.start, item.end, item.conflict ? "conflict" : "task", dayStart, widthBase, item.manual));
     timeline.innerHTML = [...workRows, ...taskRows].length
         ? [...workRows, ...taskRows].sort((a, b) => Number(a.datasetStart) - Number(b.datasetStart)).map((row) => row.html).join("")
         : `<p class="placeholder">Todoを選ぶとタイムチャートを表示します。</p>`;
 }
 
-function timelineRow(title, start, end, type, dayStart, widthBase) {
+function timelineRow(title, start, end, type, dayStart, widthBase, manual = false) {
     const left = ((start - dayStart) / widthBase) * 100;
     const width = Math.max(2, ((end - start) / widthBase) * 100);
     return {
@@ -666,7 +722,7 @@ function timelineRow(title, start, end, type, dayStart, widthBase) {
             <div class="timeline-row">
                 <span>${escapeHtml(minutesToTime(start))} - ${escapeHtml(minutesToTime(end))}</span>
                 <div class="timeline-track">
-                    <b class="${type}" style="left:${left}%;width:${width}%">${escapeHtml(title)}</b>
+                    <b class="${type}" style="left:${left}%;width:${width}%">${manual ? "固定: " : ""}${escapeHtml(title)}</b>
                 </div>
             </div>
         `,
@@ -1220,11 +1276,39 @@ function setupDayPlanner(state) {
 
     picker?.addEventListener("change", (event) => {
         const checkbox = event.target.closest("[data-day-plan-task]");
-        if (!checkbox) return;
-        const ids = new Set(state.dayPlan.selectedTaskIds || []);
-        if (checkbox.checked) ids.add(checkbox.dataset.dayPlanTask);
-        else ids.delete(checkbox.dataset.dayPlanTask);
-        state.dayPlan.selectedTaskIds = Array.from(ids);
+        const timeInput = event.target.closest("[data-day-plan-start-time]");
+        if (checkbox) {
+            const ids = new Set(state.dayPlan.selectedTaskIds || []);
+            if (checkbox.checked) ids.add(checkbox.dataset.dayPlanTask);
+            else {
+                ids.delete(checkbox.dataset.dayPlanTask);
+                delete state.dayPlan.taskStarts?.[checkbox.dataset.dayPlanTask];
+            }
+            state.dayPlan.selectedTaskIds = Array.from(ids);
+        } else if (timeInput) {
+            state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
+            if (timeInput.value) state.dayPlan.taskStarts[timeInput.dataset.dayPlanStartTime] = timeInput.value;
+            else delete state.dayPlan.taskStarts[timeInput.dataset.dayPlanStartTime];
+        } else {
+            return;
+        }
+        saveLocalState(state);
+        renderDayPlanner(state);
+    });
+
+    picker?.addEventListener("input", (event) => {
+        const range = event.target.closest("[data-day-plan-start-range]");
+        if (!range) return;
+        state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
+        state.dayPlan.taskStarts[range.dataset.dayPlanStartRange] = minutesToTime(Number(range.value));
+        saveLocalState(state);
+        renderDayPlanner(state);
+    });
+
+    picker?.addEventListener("click", (event) => {
+        const autoTaskButton = event.target.closest("[data-day-plan-auto-task]");
+        if (!autoTaskButton) return;
+        delete state.dayPlan.taskStarts?.[autoTaskButton.dataset.dayPlanAutoTask];
         saveLocalState(state);
         renderDayPlanner(state);
     });

@@ -252,7 +252,7 @@ button.action-link-primary {
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: minmax(360px, 1.05fr) minmax(320px, 0.95fr) minmax(320px, 0.95fr);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 16px;
     align-items: start;
 }
@@ -582,7 +582,27 @@ button:disabled {
 }
 
 .todo-panel {
-    grid-row: span 2;
+    order: 1;
+    grid-column: span 4;
+    grid-row: span 3;
+}
+
+.progress-panel,
+.ai-panel,
+.next-action-panel {
+    grid-column: span 4;
+}
+
+.progress-panel {
+    order: 3;
+}
+
+.ai-panel {
+    order: 4;
+}
+
+.next-action-panel {
+    order: 5;
 }
 
 .next-action-panel {
@@ -591,7 +611,25 @@ button:disabled {
 }
 
 .day-plan-panel {
-    grid-column: span 2;
+    order: 2;
+    grid-column: span 8;
+}
+
+.quick-log-panel,
+.shortcuts-panel,
+.daily-review-panel,
+.logs-panel,
+.reviews-panel,
+.ai-panel {
+    grid-column: span 4;
+}
+
+.quick-log-panel,
+.shortcuts-panel,
+.daily-review-panel,
+.logs-panel,
+.reviews-panel {
+    order: 6;
 }
 
 .day-plan-layout {
@@ -639,6 +677,37 @@ button:disabled {
     grid-column: 2;
     color: var(--muted-color);
     font-weight: 800;
+}
+
+.day-plan-placement {
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: auto minmax(110px, 1fr) 104px 64px;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.day-plan-placement span {
+    color: var(--muted-color);
+    font-size: 0.74rem;
+    font-weight: 800;
+}
+
+.day-plan-placement input[type="range"] {
+    padding: 0;
+    accent-color: var(--primary-color);
+}
+
+.day-plan-placement input[type="time"] {
+    min-height: 34px;
+    padding: 6px 8px;
+    font-size: 0.82rem;
+}
+
+.day-plan-placement .item-action {
+    min-height: 34px;
+    padding: 0 8px;
 }
 
 .time-chart {
@@ -727,28 +796,38 @@ button:disabled {
     background: #64736c;
 }
 
+.timeline-track b.conflict {
+    background: var(--danger-color);
+}
+
 .log-panel {
-    grid-column: span 2;
+    order: 7;
+    grid-column: span 6;
 }
 
 .knowledge-panel {
-    grid-column: span 2;
+    order: 1;
+    grid-column: span 8;
 }
 
 .settings-panel {
-    grid-column: span 1;
+    order: 1;
+    grid-column: span 12;
 }
 
 .projects-panel {
-    grid-column: span 3;
+    order: 1;
+    grid-column: span 12;
 }
 
 .goal-planner-panel {
-    grid-column: span 3;
+    order: 1;
+    grid-column: span 12;
 }
 
 .goal-detail-panel {
-    grid-column: span 3;
+    order: 2;
+    grid-column: span 12;
 }
 
 .goal-detail-grid {
@@ -888,12 +967,25 @@ button:disabled {
 
 .settings-actions {
     display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     margin-top: 14px;
 }
 
+.settings-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+}
+
+.settings-form h3,
+.settings-form > label:last-of-type,
+.settings-form > button {
+    grid-column: 1 / -1;
+}
+
 .schema-check-result {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     margin-top: 12px;
 }
@@ -924,8 +1016,13 @@ button:disabled {
 
 .management-lists {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
     margin-top: 18px;
+}
+
+.management-section:first-child {
+    grid-column: 1 / -1;
 }
 
 .management-section {
@@ -1274,7 +1371,15 @@ body.dark-mode .flatpickr-weekday {
     }
 
     .todo-panel,
+    .progress-panel,
+    .ai-panel,
+    .next-action-panel,
+    .quick-log-panel,
+    .shortcuts-panel,
+    .daily-review-panel,
     .log-panel,
+    .knowledge-panel,
+    .settings-panel,
     .projects-panel,
     .goal-detail-panel,
     .goal-planner-panel,
@@ -1314,7 +1419,11 @@ body.dark-mode .flatpickr-weekday {
     .dashboard-grid,
     .form-row,
     .shortcut-list,
-    .knowledge-workspace {
+    .knowledge-workspace,
+    .settings-actions,
+    .settings-form,
+    .schema-check-result,
+    .management-lists {
         grid-template-columns: 1fr;
     }
 
@@ -1323,6 +1432,12 @@ body.dark-mode .flatpickr-weekday {
     }
 
     .todo-panel,
+    .progress-panel,
+    .ai-panel,
+    .next-action-panel,
+    .quick-log-panel,
+    .shortcuts-panel,
+    .daily-review-panel,
     .log-panel,
     .settings-panel,
     .knowledge-panel,
@@ -1336,6 +1451,10 @@ body.dark-mode .flatpickr-weekday {
     }
 
     .timeline-row {
+        grid-template-columns: 1fr;
+    }
+
+    .day-plan-placement {
         grid-template-columns: 1fr;
     }
 

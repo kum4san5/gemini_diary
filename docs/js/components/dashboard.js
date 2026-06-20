@@ -1,6 +1,7 @@
 import { GAS_WEB_APP_URL } from "../config.js";
 
 const STORAGE_KEY = "lifeDashboardState";
+let sessionTimerId = null;
 
 const apCategories = ["過去問道場", "模擬試験", "苦手復習", "知識整理", "動画", "読書", "調査", "その他"];
 const apGenres = ["セキュリティ", "ネットワーク", "データベース", "マネジメント", "ストラテジ", "システム開発", "アルゴリズム", "その他"];
@@ -70,6 +71,7 @@ const defaultState = {
         { id: "shortcut-default-ted", title: "TED", category: "English", url: "https://www.ted.com/" },
     ],
     syncStatus: "local",
+    activeSession: null,
     dayPlan: {
         type: "weekday",
         workStart: "09:00",
@@ -111,9 +113,20 @@ function loadLocalState() {
 
 function normalizeState(state) {
     state.shortcuts = normalizeShortcuts(state.shortcuts);
+    state.activeSession = normalizeActiveSession(state.activeSession);
     state.dayPlan = { ...cloneDefaultState().dayPlan, ...(state.dayPlan || {}) };
     state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
     return state;
+}
+
+function normalizeActiveSession(session) {
+    if (!session || !session.startedAt) return null;
+    return {
+        ...session,
+        accumulatedSeconds: Number(session.accumulatedSeconds || 0),
+        presetMinutes: Number(session.presetMinutes || 5),
+        isRunning: Boolean(session.isRunning),
+    };
 }
 
 function normalizeShortcuts(shortcuts) {
@@ -544,6 +557,45 @@ function formatDuration(minutes) {
     if (hours && mins) return `${hours}時間${mins}分`;
     if (hours) return `${hours}時間`;
     return `${mins}分`;
+}
+
+function formatClock(totalSeconds) {
+    const value = Math.max(0, Math.floor(Number(totalSeconds || 0)));
+    const minutes = Math.floor(value / 60);
+    const seconds = value % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function sessionPlannedSeconds(session) {
+    return Math.max(60, Number(session?.presetMinutes || 5) * 60);
+}
+
+function sessionElapsedSeconds(session) {
+    if (!session) return 0;
+    const accumulated = Math.max(0, Number(session.accumulatedSeconds || 0));
+    if (!session.isRunning || !session.startedAt) return accumulated;
+    const startedAt = Date.parse(session.startedAt);
+    if (!Number.isFinite(startedAt)) return accumulated;
+    return accumulated + Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+}
+
+function updateActiveSessionProgress(state, persist = false) {
+    const session = state.activeSession;
+    if (!session) return false;
+    const elapsed = sessionElapsedSeconds(session);
+    const planned = sessionPlannedSeconds(session);
+    if (session.isRunning && elapsed >= planned) {
+        session.accumulatedSeconds = planned;
+        session.isRunning = false;
+        session.finishedAt = new Date().toISOString();
+        if (persist) saveLocalState(state);
+        return true;
+    }
+    return false;
+}
+
+function realIds(ids) {
+    return (ids || []).filter((id) => isRealPageId(id));
 }
 
 function dayPlanBlocks(plan) {
@@ -1124,27 +1176,230 @@ function renderNextAction(state) {
     const target = document.getElementById("next-action-copy");
     if (!target) return;
 
-    const goals = state.extended?.goals || [];
-    const nextTask = state.tasks.find((task) => !task.completed && task.priority === "今日中")
-        || state.tasks.find((task) => !task.completed)
-        || null;
-    const actionableNote = state.notes.find((note) => note.actionable && note.actionText);
-    const activeGoal = goals.find((goal) => goal.status !== "完了") || goals[0];
+    const action = selectNextAction(state);
 
-    if (nextTask) {
-        const goal = (nextTask.goalIds || [])
-            .map((id) => goals.find((item) => item.id === id))
+    if (action?.type === "task") {
+        const goal = (action.task.goalIds || [])
+            .map((id) => (state.extended?.goals || []).find((item) => item.id === id))
             .find(Boolean);
         target.textContent = goal
-            ? `「${goal.title}」の一手として、まずは「${nextTask.title}」。5分だけ着手で十分です。`
-            : `まずは「${nextTask.title}」。完璧に終わらせるより、5分だけ着手で十分です。`;
-    } else if (actionableNote) {
-        target.textContent = `ナレッジの実行候補「${actionableNote.actionText}」をTodoにすると、次の行動に移せます。`;
-    } else if (activeGoal) {
-        target.textContent = `Goal「${activeGoal.title}」に向けて、最初のサブタスクを1つ作るのがよさそうです。Goalsタブの目標プランナーから提案できます。`;
+            ? `「${goal.title}」の一手として、まずは「${action.task.title}」。5分だけ着手で十分です。`
+            : `まずは「${action.task.title}」。完璧に終わらせるより、5分だけ着手で十分です。`;
+    } else if (action?.type === "note") {
+        target.textContent = `ナレッジの実行候補「${action.note.actionText}」をTodoにすると、次の行動に移せます。`;
+    } else if (action?.type === "goal") {
+        target.textContent = `Goal「${action.goal.title}」に向けて、最初のサブタスクを1つ作るのがよさそうです。Goalsタブの目標プランナーから提案できます。`;
     } else {
         target.textContent = "今すぐ動かす候補はありません。Todoか実行候補つきナレッジを1つ追加しましょう。";
     }
+}
+
+function selectNextAction(state) {
+    const priorityScore = { "今日中": 0, "なるべく早く": 1, "余裕があれば": 2 };
+    const task = (state.tasks || [])
+        .filter((item) => !item.completed)
+        .sort((a, b) => (priorityScore[a.priority] ?? 3) - (priorityScore[b.priority] ?? 3))[0];
+    if (task) return { type: "task", task };
+
+    const note = (state.notes || []).find((item) => item.actionable && item.actionText);
+    if (note) return { type: "note", note };
+
+    const goal = (state.extended?.goals || []).find((item) => item.status !== "完了") || (state.extended?.goals || [])[0];
+    return goal ? { type: "goal", goal } : null;
+}
+
+function resolveActionResources(state, action) {
+    if (!action) return [];
+    const item = action.task || action.note || action.goal || {};
+    const resources = state.extended?.resources || [];
+    const links = [];
+
+    if (item.link && isValidUrl(item.link)) {
+        links.push({ id: "task-link", title: "Task link", url: item.link, category: "Task" });
+    }
+    if (item.sourceUrl && isValidUrl(item.sourceUrl)) {
+        links.push({ id: "source-url", title: "参照URL", url: item.sourceUrl, category: "Knowledge" });
+    }
+
+    const itemResourceIds = new Set(item.resourceIds || []);
+    resources
+        .filter((resource) => itemResourceIds.has(resource.id) && isValidUrl(resource.url))
+        .forEach((resource) => links.push({
+            id: resource.id,
+            title: resource.title || "Resource",
+            url: resource.url,
+            category: resource.type || resource.category || "Resource",
+        }));
+
+    const goalIds = new Set(item.goalIds || (action.goal?.id ? [action.goal.id] : []));
+    if (goalIds.size) {
+        resources
+            .filter((resource) => (resource.goalIds || []).some((id) => goalIds.has(id)) && isValidUrl(resource.url))
+            .forEach((resource) => links.push({
+                id: resource.id,
+                title: resource.title || "Goal Resource",
+                url: resource.url,
+                category: resource.type || resource.category || "Resource",
+            }));
+    }
+
+    const fallbackShortcuts = (state.shortcuts || [])
+        .filter((shortcut) => shortcut.enabled !== false && isValidUrl(shortcut.url))
+        .map((shortcut) => ({ ...shortcut, score: shortcutScore(shortcut, item) }))
+        .filter((shortcut) => shortcut.score > 0 || links.length === 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, Math.max(0, 3 - links.length))
+        .map((shortcut) => ({
+            id: shortcut.id,
+            title: shortcut.title || "Shortcut",
+            url: shortcut.url,
+            category: shortcut.category || "Shortcut",
+        }));
+
+    return uniqueLaunchLinks([...links, ...fallbackShortcuts]).slice(0, 4);
+}
+
+function shortcutScore(shortcut, item) {
+    const haystack = [
+        shortcut.title,
+        shortcut.category,
+        shortcut.memo,
+    ].join(" ").toLowerCase();
+    const words = wordsForRelation([
+        item.title,
+        item.area,
+        item.category,
+        item.genre,
+        item.memo,
+    ].join(" "));
+    return words.reduce((score, word) => score + (haystack.includes(word) ? 2 : 0), 0)
+        + (item.area && haystack.includes(String(item.area).toLowerCase()) ? 3 : 0);
+}
+
+function uniqueLaunchLinks(links) {
+    const seen = new Set();
+    return links.filter((link) => {
+        if (!link?.url || seen.has(link.url)) return false;
+        seen.add(link.url);
+        return true;
+    });
+}
+
+function renderStartConsole(state) {
+    const target = document.getElementById("start-console");
+    if (!target) return;
+    updateActiveSessionProgress(state);
+
+    if (state.activeSession) {
+        target.innerHTML = renderActiveSession(state);
+        return;
+    }
+
+    const action = selectNextAction(state);
+    if (!action) {
+        target.innerHTML = `<div class="start-empty">今日はまだ開始候補がありません。Todoを1つ作るか、実行候補つきナレッジをTodoにしましょう。</div>`;
+        return;
+    }
+
+    if (action.type === "task") {
+        const task = action.task;
+        target.innerHTML = `
+            <div class="start-card">
+                <div>
+                    <span class="metric-label">Start Console</span>
+                    <h3>${escapeHtml(task.title || "Untitled Todo")}</h3>
+                    <div class="task-meta">
+                        <span class="priority-pill">${escapeHtml(task.priority || "今日中")}</span>
+                        <span class="status-pill">${escapeHtml(task.area || "学習")}</span>
+                        <span class="status-pill">${escapeHtml(task.category || "未分類")}</span>
+                        ${task.estimatedMinutes ? `<span class="status-pill">見積 ${formatDuration(task.estimatedMinutes)}</span>` : ""}
+                    </div>
+                </div>
+                <div class="start-actions">
+                    <button type="button" data-start-minutes="5">5分だけ始める</button>
+                    <button class="secondary-btn" type="button" data-start-minutes="15">15分集中</button>
+                </div>
+            </div>
+            ${renderLaunchLinks(resolveActionResources(state, action))}
+        `;
+        return;
+    }
+
+    if (action.type === "note") {
+        target.innerHTML = `
+            <div class="start-card">
+                <div>
+                    <span class="metric-label">Knowledge Action</span>
+                    <h3>${escapeHtml(action.note.actionText || action.note.title || "実行候補")}</h3>
+                    <p class="start-note">Todoに変換すると、開始ボタンとタイマーにつなげられます。</p>
+                </div>
+                <div class="start-actions">
+                    <button type="button" data-note-create-task="${escapeHtml(action.note.id)}">Todoにする</button>
+                </div>
+            </div>
+            ${renderLaunchLinks(resolveActionResources(state, action))}
+        `;
+        return;
+    }
+
+    target.innerHTML = `
+        <div class="start-card">
+            <div>
+                <span class="metric-label">Goal Action</span>
+                <h3>${escapeHtml(action.goal.title || "Untitled Goal")}</h3>
+                <p class="start-note">最初のサブタスクを作ると、ここから着手できます。</p>
+            </div>
+            <div class="start-actions">
+                <button type="button" data-view-jump="goals">Goalsを開く</button>
+            </div>
+        </div>
+        ${renderLaunchLinks(resolveActionResources(state, action))}
+    `;
+}
+
+function renderActiveSession(state) {
+    const session = state.activeSession;
+    const elapsed = sessionElapsedSeconds(session);
+    const planned = sessionPlannedSeconds(session);
+    const remaining = Math.max(0, planned - elapsed);
+    const progress = Math.min((elapsed / Math.max(1, planned)) * 100, 100);
+    const task = (state.tasks || []).find((item) => item.id === session.taskId);
+    const sessionTask = task || session;
+    return `
+        <div class="start-card active">
+            <div>
+                <span class="metric-label">${session.isRunning ? "実行中" : "一区切り"}</span>
+                <h3>${escapeHtml(session.title || "Focus Session")}</h3>
+                <div class="session-clock">${formatClock(session.isRunning ? remaining : elapsed)}</div>
+                <div class="session-progress"><span style="width:${progress}%"></span></div>
+                <p class="start-note">${session.isRunning ? "このまま小さく進めましょう。" : "いい区切りです。記録するか、少しだけ続けられます。"}</p>
+            </div>
+            <div class="start-actions">
+                ${session.isRunning ? "" : `<button type="button" data-start-extend="10">続ける +10分</button>`}
+                <button class="secondary-btn" type="button" data-start-record>記録する</button>
+                <button class="secondary-btn" type="button" data-start-clear>今日はここまで</button>
+            </div>
+        </div>
+        ${renderLaunchLinks(resolveActionResources(state, { type: "task", task: sessionTask }))}
+    `;
+}
+
+function renderLaunchLinks(links) {
+    return `
+        <div class="start-launch">
+            <span class="metric-label">Resources</span>
+            ${links.length ? `
+                <div class="start-launch-list">
+                    ${links.map((link) => `
+                        <a class="start-link" href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">
+                            <strong>${escapeHtml(link.title)}</strong>
+                            <span>${escapeHtml(link.category || "Resource")}</span>
+                        </a>
+                    `).join("")}
+                </div>
+            ` : `<p class="start-note">関連Resourceはまだありません。TaskにLinkかResourceを紐づけると、ここから直接始められます。</p>`}
+        </div>
+    `;
 }
 
 function renderSyncStatus(state) {
@@ -1254,6 +1509,7 @@ function render(state) {
     renderGoalPlanPreview(state);
     renderMetrics(state);
     renderNextAction(state);
+    renderStartConsole(state);
     renderSyncStatus(state);
     renderManagementLists(state);
     populateRelationSelects(state);
@@ -1333,6 +1589,43 @@ function setupDayPlanner(state) {
         saveLocalState(state);
         renderDayPlanner(state);
     });
+}
+
+function setupStartConsole(state) {
+    const consoleEl = document.getElementById("start-console");
+    if (!consoleEl) return;
+
+    consoleEl.addEventListener("click", async (event) => {
+        const startButton = event.target.closest("[data-start-minutes]");
+        if (startButton) {
+            startFocusSession(state, Number(startButton.dataset.startMinutes));
+            return;
+        }
+
+        const extendButton = event.target.closest("[data-start-extend]");
+        if (extendButton) {
+            extendFocusSession(state, Number(extendButton.dataset.startExtend));
+            return;
+        }
+
+        if (event.target.closest("[data-start-clear]")) {
+            clearFocusSession(state);
+            return;
+        }
+
+        if (event.target.closest("[data-start-record]")) {
+            await saveSessionAsLog(state);
+        }
+    });
+
+    if (sessionTimerId) window.clearInterval(sessionTimerId);
+    sessionTimerId = window.setInterval(() => {
+        if (!state.activeSession) return;
+        const wasRunning = state.activeSession.isRunning;
+        const finished = updateActiveSessionProgress(state, true);
+        renderStartConsole(state);
+        if (wasRunning && finished) showToast("一区切りです。記録するか、少しだけ続けられます。", "success");
+    }, 1000);
 }
 
 function setSyncState(state, status, message) {
@@ -1418,9 +1711,125 @@ function buildDailySummary(state, review) {
     ].join(" ");
 }
 
+function buildLearningLog(input) {
+    const area = input.area || "その他";
+    const memo = String(input.memo || "").trim();
+    const category = input.category || inferCategory(memo, area);
+    const genre = input.genre || inferGenre(memo, area);
+    return {
+        id: input.id || `log-${Date.now()}`,
+        date: input.date || todayKey(),
+        minutes: Number(input.minutes || 0),
+        area,
+        category,
+        genre,
+        understanding: input.understanding || "不明",
+        energy: input.energy || "普通",
+        tags: input.tags || "",
+        memo,
+        relatedTaskId: input.relatedTaskId || "",
+        projectIds: input.projectIds || [],
+        goalIds: input.goalIds || [],
+        resourceIds: input.resourceIds || [],
+    };
+}
+
+async function saveLearningLogWithFallback(state, log, successMessage = "記録しました。") {
+    if (!validateLogInput(state, log)) return null;
+
+    state.logs.unshift(log);
+    saveLocalState(state);
+    render(state);
+
+    try {
+        setSyncState(state, "syncing", "活動ログをNotionへ保存中...");
+        const result = await apiPost({ action: "saveLearningLog", ...log });
+        if (result.learningLog) state.logs[0] = result.learningLog;
+        setSyncState(state, "notion", "活動ログをNotionへ保存しました。");
+        saveLocalState(state);
+        render(state);
+        showToast(successMessage, "success");
+        return result.learningLog || log;
+    } catch (error) {
+        console.warn("saveLearningLog fallback to localStorage", error);
+        setSyncState(state, "local", "活動ログはローカル保存です。Notion保存に失敗しました。");
+        render(state);
+        return log;
+    }
+}
+
+function startFocusSession(state, minutes) {
+    const action = selectNextAction(state);
+    if (action?.type !== "task") {
+        showToast("開始できるTodoがありません。先にTodoを1つ作りましょう。", "error");
+        return;
+    }
+
+    const task = action.task;
+    state.activeSession = {
+        id: `session-${Date.now()}`,
+        taskId: task.id,
+        title: task.title || "Focus Session",
+        area: task.area || "学習",
+        category: task.category || inferCategory(task.title || "", task.area || "学習"),
+        genre: task.genre || inferGenre(task.title || "", task.area || "学習"),
+        memo: task.memo || "",
+        startedAt: new Date().toISOString(),
+        accumulatedSeconds: 0,
+        presetMinutes: Number(minutes || 5),
+        isRunning: true,
+        projectIds: task.projectIds || [],
+        goalIds: task.goalIds || [],
+        resourceIds: task.resourceIds || [],
+    };
+    saveLocalState(state);
+    render(state);
+}
+
+function extendFocusSession(state, minutes) {
+    const session = state.activeSession;
+    if (!session) return;
+    session.accumulatedSeconds = sessionElapsedSeconds(session);
+    session.startedAt = new Date().toISOString();
+    session.presetMinutes = Math.ceil(session.accumulatedSeconds / 60) + Number(minutes || 10);
+    session.isRunning = true;
+    session.finishedAt = "";
+    saveLocalState(state);
+    render(state);
+}
+
+function clearFocusSession(state) {
+    state.activeSession = null;
+    saveLocalState(state);
+    render(state);
+}
+
+async function saveSessionAsLog(state) {
+    const session = state.activeSession;
+    if (!session) return;
+    const elapsedSeconds = sessionElapsedSeconds(session);
+    const minutes = Math.max(1, Math.ceil(elapsedSeconds / 60));
+    const log = buildLearningLog({
+        minutes,
+        area: session.area,
+        category: session.category,
+        genre: session.genre,
+        memo: `集中セッション: ${session.title}`,
+        relatedTaskId: isRealPageId(session.taskId) ? session.taskId : "",
+        projectIds: realIds(session.projectIds),
+        goalIds: realIds(session.goalIds),
+        resourceIds: realIds(session.resourceIds),
+    });
+
+    state.activeSession = null;
+    await saveLearningLogWithFallback(state, log, "集中セッションを記録しました。");
+}
+
 async function refreshFromNotion(state) {
+    const activeSession = state.activeSession;
+    const dayPlan = state.dayPlan;
     const remoteState = await loadRemoteState();
-    Object.assign(state, remoteState);
+    Object.assign(state, normalizeState({ ...remoteState, activeSession, dayPlan }));
     saveLocalState(state);
     render(state);
 }
@@ -2230,43 +2639,20 @@ function setupQuickLogForm(state) {
         const category = inferCategory(memo, area);
         const genre = inferGenre(memo, area);
         const relationText = `${area} ${category} ${genre} ${memo}`;
-        const log = {
-            id: `log-${Date.now()}`,
-            date: todayKey(),
+        const log = buildLearningLog({
             minutes,
             area,
             category,
             genre,
-            understanding: "不明",
-            energy: "普通",
-            tags: "",
             memo,
             relatedTaskId: inferRelatedId(state.tasks || [], relationText, area),
             projectIds: relationIdsFromSelectOrInference("", state.extended?.projects || [], relationText, area),
             goalIds: relationIdsFromSelectOrInference("", state.extended?.goals || [], relationText, area),
             resourceIds: relationIdsFromSelectOrInference("", state.extended?.resources || [], relationText, area),
-        };
+        });
 
-        if (!validateLogInput(state, log)) return;
-
-        state.logs.unshift(log);
-        saveLocalState(state);
-        render(state);
-        form.reset();
-
-        try {
-            setSyncState(state, "syncing", "クイックログをNotionへ保存中...");
-            const result = await apiPost({ action: "saveLearningLog", ...log });
-            if (result.learningLog) state.logs[0] = result.learningLog;
-            setSyncState(state, "notion", "クイックログを保存しました。");
-            saveLocalState(state);
-            render(state);
-            showToast("記録しました。", "success");
-        } catch (error) {
-            console.warn("quick log fallback to localStorage", error);
-            setSyncState(state, "local", "クイックログはローカル保存です。Notion保存に失敗しました。");
-            render(state);
-        }
+        const saved = await saveLearningLogWithFallback(state, log, "クイックログを保存しました。");
+        if (saved) form.reset();
     });
 }
 
@@ -2506,17 +2892,74 @@ function renderSchemaCheckResult(result) {
     const target = document.getElementById("schema-check-result");
     if (!target) return;
     const rows = Array.isArray(result?.results) ? result.results : [];
-    target.innerHTML = rows.length
-        ? rows.map((row) => {
-            const missing = row.missingDatabaseId ? "DATABASE_ID未設定" : (row.missingProperties || []).join(", ");
-            return `
-                <article class="schema-check-item ${row.ok ? "ok" : "missing"}">
-                    <strong>${escapeHtml(row.name || row.key)}</strong>
-                    <p>${row.ok ? "OK" : escapeHtml(missing || "不足があります")}</p>
+    if (!rows.length) {
+        target.innerHTML = `<p class="placeholder">チェック結果がありません。</p>`;
+        return;
+    }
+
+    const missingRows = rows.filter((row) => row.missingDatabaseId || (row.missingProperties || []).length);
+    const okCount = rows.length - missingRows.length;
+    target.innerHTML = `
+        ${renderMissingPropertySummary(rows)}
+        <div class="schema-check-grid">
+            ${missingRows.length ? missingRows.map((row) => {
+                const missing = row.missingProperties || [];
+                return `
+                    <article class="schema-check-item missing">
+                        <div class="schema-check-heading">
+                            <strong>${escapeHtml(row.name || row.key)}</strong>
+                            <span class="status-pill">${row.missingDatabaseId ? "DB ID未設定" : `${missing.length}件不足`}</span>
+                        </div>
+                        <p>${escapeHtml(row.key || "")}</p>
+                        ${row.missingDatabaseId
+                            ? `<p class="danger-text">Script Propertiesに ${escapeHtml(row.key)} を追加してください。</p>`
+                            : `<ul class="schema-missing-list">${missing.map((property) => `<li>${escapeHtml(property)}</li>`).join("")}</ul>`
+                        }
+                    </article>
+                `;
+            }).join("") : `
+                <article class="schema-check-item ok">
+                    <strong>All OK</strong>
+                    <p>Notion DBの必須プロパティは揃っています。</p>
                 </article>
-            `;
-        }).join("")
-        : `<p class="placeholder">チェック結果がありません。</p>`;
+            `}
+            ${okCount ? `
+                <details class="schema-ok-details">
+                    <summary>OKのDB ${okCount}件</summary>
+                    <div class="schema-ok-list">
+                        ${rows.filter((row) => !row.missingDatabaseId && !(row.missingProperties || []).length)
+                            .map((row) => `<span class="status-pill">${escapeHtml(row.name || row.key)}</span>`)
+                            .join("")}
+                    </div>
+                </details>
+            ` : ""}
+        </div>
+    `;
+}
+
+function renderMissingPropertySummary(rows) {
+    const missingRows = rows.filter((row) => row.missingDatabaseId || (row.missingProperties || []).length);
+    if (!missingRows.length) {
+        return `
+            <section class="schema-missing-summary ok">
+                <strong>Notion DB整合性はOKです。</strong>
+                <p>不足プロパティはありません。</p>
+            </section>
+        `;
+    }
+
+    const copyText = missingRows.map((row) => {
+        if (row.missingDatabaseId) return `${row.name || row.key}\nMissing DB ID: ${row.key}`;
+        return `${row.name || row.key}\nMissing: ${(row.missingProperties || []).join(", ")}`;
+    }).join("\n\n");
+
+    return `
+        <section class="schema-missing-summary">
+            <strong>Notion側で直す項目: ${missingRows.length} DB</strong>
+            <p>不足しているプロパティだけを表示しています。以下を見ながらNotion DBを修正してください。</p>
+            <textarea readonly aria-label="不足プロパティのコピー用テキスト">${escapeHtml(copyText)}</textarea>
+        </section>
+    `;
 }
 
 function setupShortcutForm(state) {
@@ -2958,10 +3401,12 @@ function setupViewTabs() {
 
 export async function setupDashboard() {
     const state = loadLocalState();
+    updateActiveSessionProgress(state, true);
     render(state);
     setupTaskForm(state);
     setupTaskList(state);
     setupDayPlanner(state);
+    setupStartConsole(state);
     setupQuickLogForm(state);
     setupLearningLogForm(state);
     setupKnowledgeForm(state);

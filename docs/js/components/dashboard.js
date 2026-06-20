@@ -1306,7 +1306,7 @@ function renderStartConsole(state) {
         target.innerHTML = `
             <div class="start-card">
                 <div>
-                    <span class="metric-label">Start Console</span>
+                    <span class="metric-label">今やること</span>
                     <h3>${escapeHtml(task.title || "Untitled Todo")}</h3>
                     <div class="task-meta">
                         <span class="priority-pill">${escapeHtml(task.priority || "今日中")}</span>
@@ -1329,7 +1329,7 @@ function renderStartConsole(state) {
         target.innerHTML = `
             <div class="start-card">
                 <div>
-                    <span class="metric-label">Knowledge Action</span>
+                    <span class="metric-label">Todo化する候補</span>
                     <h3>${escapeHtml(action.note.actionText || action.note.title || "実行候補")}</h3>
                     <p class="start-note">Todoに変換すると、開始ボタンとタイマーにつなげられます。</p>
                 </div>
@@ -1345,7 +1345,7 @@ function renderStartConsole(state) {
     target.innerHTML = `
         <div class="start-card">
             <div>
-                <span class="metric-label">Goal Action</span>
+                <span class="metric-label">目標から作る</span>
                 <h3>${escapeHtml(action.goal.title || "Untitled Goal")}</h3>
                 <p class="start-note">最初のサブタスクを作ると、ここから着手できます。</p>
             </div>
@@ -1375,7 +1375,7 @@ function renderActiveSession(state) {
                 <p class="start-note">${session.isRunning ? "このまま小さく進めましょう。" : "いい区切りです。記録するか、少しだけ続けられます。"}</p>
             </div>
             <div class="start-actions">
-                ${session.isRunning ? "" : `<button type="button" data-start-extend="10">続ける +10分</button>`}
+                ${session.isRunning ? "" : `<button type="button" data-start-extend="10">+10分続ける</button>`}
                 <button class="secondary-btn" type="button" data-start-record>記録する</button>
                 <button class="secondary-btn" type="button" data-start-clear>今日はここまで</button>
             </div>
@@ -1387,7 +1387,7 @@ function renderActiveSession(state) {
 function renderLaunchLinks(links) {
     return `
         <div class="start-launch">
-            <span class="metric-label">Resources</span>
+            <span class="metric-label">開くもの</span>
             ${links.length ? `
                 <div class="start-launch-list">
                     ${links.map((link) => `
@@ -3369,6 +3369,7 @@ function setupViewTabs() {
     if (!tabs.length || !panels.length) return;
 
     function activateView(view) {
+        document.body.dataset.activeView = view;
         tabs.forEach((tab) => {
             const active = tab.dataset.viewTab === view;
             tab.classList.toggle("active", active);

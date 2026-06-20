@@ -17,7 +17,7 @@
             <div>
                 <p class="eyebrow">Personal OS</p>
                 <h1>Life Dashboard</h1>
-                <p class="header-copy">今日のTodo、活動ログ、ナレッジ、ショートカット、日々の積み上げを一箇所で確認します。</p>
+                <p class="header-copy">今日の一手、時間配分、記録を静かに揃えるホーム画面。</p>
             </div>
             <div class="header-actions" aria-label="クイック操作">
                 <button class="action-link" type="button" data-view-jump="logs">ログを書く</button>
@@ -75,75 +75,78 @@
 
                 <div id="task-list" class="task-list"></div>
 
-                <form id="task-form" class="compact-form">
-                    <label>
-                        Todo
-                        <input id="task-title" type="text" placeholder="例: 開発 ダッシュボードUIを30分改善">
-                    </label>
-                    <div class="form-row">
+                <details class="task-create-details">
+                    <summary>Todoを追加</summary>
+                    <form id="task-form" class="compact-form">
                         <label>
-                            領域
-                            <select id="task-area">
-                                <option>学習</option>
-                                <option>開発</option>
-                                <option>英語</option>
-                                <option>読書</option>
-                                <option>創作</option>
-                                <option>生活</option>
-                                <option>お金</option>
-                                <option>健康</option>
-                                <option>その他</option>
-                            </select>
+                            Todo
+                            <input id="task-title" type="text" placeholder="例: 開発 ダッシュボードUIを30分改善">
+                        </label>
+                        <div class="form-row">
+                            <label>
+                                領域
+                                <select id="task-area">
+                                    <option>学習</option>
+                                    <option>開発</option>
+                                    <option>英語</option>
+                                    <option>読書</option>
+                                    <option>創作</option>
+                                    <option>生活</option>
+                                    <option>お金</option>
+                                    <option>健康</option>
+                                    <option>その他</option>
+                                </select>
+                            </label>
+                            <label>
+                                優先度
+                                <select id="task-priority">
+                                    <option>今日中</option>
+                                    <option>なるべく早く</option>
+                                    <option>余裕があれば</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>
+                                カテゴリ
+                                <select id="task-category"></select>
+                            </label>
+                            <label>
+                                ジャンル
+                                <select id="task-genre"></select>
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>
+                                見積時間
+                                <input id="task-estimated-minutes" type="number" min="0" step="5" placeholder="30">
+                            </label>
+                            <label>
+                                リンク
+                                <input id="task-link" type="url" placeholder="https://...">
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>
+                                関連Project
+                                <select id="task-related-project"></select>
+                            </label>
+                            <label>
+                                関連Goal
+                                <select id="task-related-goal"></select>
+                            </label>
+                        </div>
+                        <label>
+                            関連Resource
+                            <select id="task-related-resource"></select>
                         </label>
                         <label>
-                            優先度
-                            <select id="task-priority">
-                                <option>今日中</option>
-                                <option>なるべく早く</option>
-                                <option>余裕があれば</option>
-                            </select>
+                            メモ
+                            <textarea id="task-memo" placeholder="例: 先にNotion連携の動作確認をする"></textarea>
                         </label>
-                    </div>
-                    <div class="form-row">
-                        <label>
-                            カテゴリ
-                            <select id="task-category"></select>
-                        </label>
-                        <label>
-                            ジャンル
-                            <select id="task-genre"></select>
-                        </label>
-                    </div>
-                    <div class="form-row">
-                        <label>
-                            見積時間
-                            <input id="task-estimated-minutes" type="number" min="0" step="5" placeholder="30">
-                        </label>
-                        <label>
-                            リンク
-                            <input id="task-link" type="url" placeholder="https://...">
-                        </label>
-                    </div>
-                    <div class="form-row">
-                        <label>
-                            関連Project
-                            <select id="task-related-project"></select>
-                        </label>
-                        <label>
-                            関連Goal
-                            <select id="task-related-goal"></select>
-                        </label>
-                    </div>
-                    <label>
-                        関連Resource
-                        <select id="task-related-resource"></select>
-                    </label>
-                    <label>
-                        メモ
-                        <textarea id="task-memo" placeholder="例: 先にNotion連携の動作確認をする"></textarea>
-                    </label>
-                    <button type="submit">Todoを追加</button>
-                </form>
+                        <button type="submit">Todoを追加</button>
+                    </form>
+                </details>
             </section>
 
             <section class="panel progress-panel" aria-labelledby="progress-heading" data-view-panel="today">

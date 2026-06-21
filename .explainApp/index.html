@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Dashboard Guide</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <header class="guide-header">
+        <div>
+            <p class="eyebrow">Life Dashboard Guide</p>
+            <h1>3分で人生の軌道に戻るホーム画面</h1>
+            <p class="lead">Start Console、Life Balance、Knowledge、Logs、Notion連携の役割を、図とユースケースで確認できます。</p>
+        </div>
+        <nav class="top-nav" aria-label="説明書ナビゲーション">
+            <a href="#overview">全体像</a>
+            <a href="#daily-flow">3分再起動</a>
+            <a href="#screens">画面</a>
+            <a href="#data">データ</a>
+            <a href="#operations">運用</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="overview" class="hero-grid">
+            <article class="hero-copy">
+                <p class="eyebrow">Purpose</p>
+                <h2>管理するためではなく、始めるためのアプリ</h2>
+                <p>このアプリの中心は、完璧な記録ではありません。今日の一手を選び、Resourceを開き、5分だけ始め、終わったらLearning Logに残すことです。</p>
+                <div class="quick-links" aria-label="Markdown説明書">
+                    <a href="README.md">README</a>
+                    <a href="use-cases.md">Use Cases</a>
+                    <a href="screens.md">Screens</a>
+                    <a href="data-model.md">Data Model</a>
+                    <a href="operations.md">Operations</a>
+                </div>
+            </article>
+            <article class="focus-card">
+                <p class="eyebrow">Core Loop</p>
+                <pre class="mermaid">
+flowchart TD
+    A[アプリを開く] --> B[Start Console]
+    B --> C[今日の一手]
+    C --> D[Resourceを開く]
+    D --> E[5分だけ始める]
+    E --> F[Learning Log]
+    F --> G[今日も再起動できた]
+                </pre>
+            </article>
+        </section>
+
+        <section id="daily-flow" class="section-band">
+            <div class="section-heading">
+                <p class="eyebrow">Daily Flow</p>
+                <h2>毎日の使い方</h2>
+                <p>疲れている日でも、操作は「見る、開く、始める、記録する」だけに寄せます。</p>
+            </div>
+            <div class="steps">
+                <article>
+                    <span>1</span>
+                    <h3>見る</h3>
+                    <p>Todayで「今やること」を確認します。</p>
+                </article>
+                <article>
+                    <span>2</span>
+                    <h3>開く</h3>
+                    <p>関連ResourceやShortcutから教材、Notion、開発環境へ移動します。</p>
+                </article>
+                <article>
+                    <span>3</span>
+                    <h3>始める</h3>
+                    <p>5分だけ始めるか、15分集中します。</p>
+                </article>
+                <article>
+                    <span>4</span>
+                    <h3>残す</h3>
+                    <p>Timer終了後、Learning Logへ自動補完して保存します。</p>
+                </article>
+            </div>
+            <pre class="mermaid wide-diagram">
+sequenceDiagram
+    participant U as User
+    participant T as Today
+    participant S as Start Console
+    participant L as Learning Log
+    U->>T: アプリを開く
+    T->>S: 今日の一手を提示
+    U->>S: 5分だけ始める
+    S->>U: ResourceとTimerを表示
+    U->>S: 記録する
+    S->>L: 実績を保存
+            </pre>
+        </section>
+
+        <section id="screens" class="section-band">
+            <div class="section-heading">
+                <p class="eyebrow">Screens</p>
+                <h2>画面ごとの役割</h2>
+            </div>
+            <div class="screen-grid">
+                <article><h3>Today</h3><p>3分再起動。Start Console、Life Balance、Quick Log、時間配分。</p></article>
+                <article><h3>Goals</h3><p>長期目標をTask、Habit、Resourceへ分解する場所。</p></article>
+                <article><h3>Knowledge</h3><p>学びを溜める場所。ActionableならTodo化してTodayへ戻す。</p></article>
+                <article><h3>Logs</h3><p>活動ログ、日次レビュー、英語日記、カレンダー。</p></article>
+                <article><h3>Projects</h3><p>Project、Goal、Resourceの作戦部屋。</p></article>
+                <article><h3>Settings</h3><p>Notion整合性、再読み込み、ローカルキャッシュ管理。</p></article>
+            </div>
+            <pre class="mermaid wide-diagram">
+flowchart TD
+    Today[Today: 3分再起動] --> Goals[Goals: 長期目標]
+    Today --> Knowledge[Knowledge: 学び]
+    Today --> Logs[Logs: 実績]
+    Today --> Projects[Projects: Resource]
+    Today --> Settings[Settings: Notion整合性]
+    Goals --> Today
+    Knowledge --> Today
+    Projects --> Today
+            </pre>
+        </section>
+
+        <section id="data" class="section-band">
+            <div class="section-heading">
+                <p class="eyebrow">Data Model</p>
+                <h2>データのつながり</h2>
+                <p>中心はTaskではなく、今日の行動です。GoalやKnowledgeは、今日の一手へ戻るための文脈です。</p>
+            </div>
+            <pre class="mermaid wide-diagram">
+erDiagram
+    Goal ||--o{ Task : creates
+    Goal ||--o{ Resource : uses
+    Project ||--o{ Goal : contains
+    Task ||--o{ FocusSession : starts
+    FocusSession ||--|| LearningLog : converts_to
+    KnowledgeNote ||--o{ Task : becomes
+    Resource ||--o{ Task : supports
+    LifeScore ||--o{ Reflection : informs
+    MoodLog ||--o{ Reflection : informs
+    FinanceSnapshot ||--o{ Goal : expands_options
+    LearningTopic ||--o{ Task : suggests
+            </pre>
+        </section>
+
+        <section id="operations" class="section-band">
+            <div class="section-heading">
+                <p class="eyebrow">Operations</p>
+                <h2>Notionとローカル保存</h2>
+            </div>
+            <div class="ops-layout">
+                <article>
+                    <h3>Notion整合性チェック</h3>
+                    <p>Settingsで不足DB IDと不足プロパティだけを表示します。Notion側の修正作業が分かりやすくなります。</p>
+                </article>
+                <article>
+                    <h3>ローカル保存</h3>
+                    <p>Focus Session、LifeScore、MoodLog、FinanceSnapshot、LearningTopicはまずlocalStorageに保存します。</p>
+                </article>
+                <article>
+                    <h3>同期失敗時</h3>
+                    <p>Notion保存に失敗してもローカルに残り、アプリの利用は止まりません。</p>
+                </article>
+            </div>
+            <pre class="mermaid wide-diagram">
+flowchart TD
+    A[Settings] --> B[Notion DB整合性チェック]
+    B --> C{不足あり?}
+    C -->|なし| D[OK]
+    C -->|DB ID不足| E[Script Propertiesを修正]
+    C -->|Property不足| F[Notion DBにProperty追加]
+    E --> G[再チェック]
+    F --> G
+            </pre>
+        </section>
+    </main>
+
+    <footer>
+        <p>Markdown詳細: <a href="README.md">README</a> / <a href="use-cases.md">Use Cases</a> / <a href="screens.md">Screens</a> / <a href="data-model.md">Data Model</a> / <a href="operations.md">Operations</a></p>
+    </footer>
+
+    <script>
+        if (window.mermaid) {
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default",
+                securityLevel: "loose",
+            });
+        }
+    </script>
+</body>
+</html>

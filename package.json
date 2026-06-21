@@ -5,6 +5,7 @@
   "description": "Static GitHub Pages frontend with Google Apps Script backend for AI diary correction.",
   "scripts": {
     "test": "jest --config jest.config.js",
+    "explain": "python3 -m http.server 4174 --directory .explainApp",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run"
   },

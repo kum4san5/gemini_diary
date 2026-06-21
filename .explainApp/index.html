@@ -8,6 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
 <body>
+    <button class="theme-toggle" id="guideThemeToggle" type="button" aria-label="ダークモード切り替え">Dark</button>
+
     <header class="guide-header">
         <div>
             <p class="eyebrow">Life Dashboard Guide</p>
@@ -181,13 +183,59 @@ flowchart TD
     </footer>
 
     <script>
-        if (window.mermaid) {
+        const themeButton = document.getElementById("guideThemeToggle");
+        const diagramSources = new Map();
+
+        function prefersDark() {
+            return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        }
+
+        function activeTheme() {
+            return document.body.classList.contains("dark-mode") ? "dark" : "light";
+        }
+
+        function applySavedTheme() {
+            const savedTheme = localStorage.getItem("theme");
+            document.body.classList.remove("dark-mode", "light-mode");
+            if (savedTheme === "dark" || (!savedTheme && prefersDark())) {
+                document.body.classList.add("dark-mode");
+            } else {
+                document.body.classList.add("light-mode");
+            }
+        }
+
+        function updateThemeButton() {
+            const isDark = activeTheme() === "dark";
+            themeButton.textContent = isDark ? "Light" : "Dark";
+            themeButton.setAttribute("aria-label", isDark ? "ライトモードに切り替え" : "ダークモードに切り替え");
+        }
+
+        async function renderMermaid() {
+            if (!window.mermaid) return;
+            document.querySelectorAll(".mermaid").forEach((element, index) => {
+                if (!diagramSources.has(index)) diagramSources.set(index, element.textContent);
+                element.removeAttribute("data-processed");
+                element.textContent = diagramSources.get(index);
+            });
             mermaid.initialize({
-                startOnLoad: true,
-                theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default",
+                startOnLoad: false,
+                theme: activeTheme() === "dark" ? "dark" : "default",
                 securityLevel: "loose",
             });
+            await mermaid.run({ querySelector: ".mermaid" });
         }
+
+        applySavedTheme();
+        updateThemeButton();
+        renderMermaid();
+
+        themeButton.addEventListener("click", async () => {
+            const nextTheme = activeTheme() === "dark" ? "light" : "dark";
+            localStorage.setItem("theme", nextTheme);
+            applySavedTheme();
+            updateThemeButton();
+            await renderMermaid();
+        });
     </script>
 </body>
 </html>

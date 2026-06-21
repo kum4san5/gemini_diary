@@ -2788,3 +2788,101 @@ body.dark-mode {
         width: 100%;
     }
 }
+
+/* Balanced Today sections */
+@media (min-width: 1121px) {
+    body[data-active-view="today"] .dashboard-grid {
+        align-items: stretch;
+    }
+
+    body[data-active-view="today"] .life-balance-panel {
+        grid-column: span 5;
+    }
+
+    body[data-active-view="today"] .category-panel {
+        grid-column: span 4;
+    }
+
+    body[data-active-view="today"] .quick-log-panel {
+        grid-column: span 3;
+    }
+
+    body[data-active-view="today"] .life-balance-panel,
+    body[data-active-view="today"] .category-panel,
+    body[data-active-view="today"] .quick-log-panel {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    body[data-active-view="today"] .life-balance-summary {
+        grid-template-columns: 104px minmax(0, 1fr);
+        align-items: start;
+        gap: 10px 12px;
+    }
+
+    body[data-active-view="today"] .life-balance-score {
+        display: grid;
+        align-content: start;
+        justify-content: start;
+        gap: 3px;
+    }
+
+    body[data-active-view="today"] .life-balance-score strong {
+        font-size: 2.35rem;
+    }
+
+    body[data-active-view="today"] .life-balance-score span {
+        font-size: 0.78rem;
+        line-height: 1.25;
+    }
+
+    body[data-active-view="today"] .life-balance-bars {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 10px;
+    }
+
+    body[data-active-view="today"] .life-axis {
+        gap: 4px;
+    }
+
+    body[data-active-view="today"] .life-balance-context {
+        grid-column: 1 / -1;
+        gap: 4px;
+        padding: 9px 10px;
+    }
+
+    body[data-active-view="today"] .life-balance-context p,
+    body[data-active-view="today"] .category-chip span,
+    body[data-active-view="today"] .category-chip small {
+        font-size: 0.75rem;
+    }
+
+    body[data-active-view="today"] .life-input-details summary {
+        min-height: 34px;
+        padding: 7px 10px;
+    }
+
+    body[data-active-view="today"] .category-summary {
+        flex: 1;
+        align-content: start;
+    }
+
+    body[data-active-view="today"] .category-chip {
+        min-height: 64px;
+    }
+
+    body[data-active-view="today"] .quick-log-panel .compact-form {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+    }
+
+    body[data-active-view="today"] .quick-log-panel .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    body[data-active-view="today"] .quick-log-panel button[type="submit"] {
+        margin-top: auto;
+    }
+}

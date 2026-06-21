@@ -300,6 +300,10 @@
                             <input id="day-plan-buffer" type="number" min="0" step="5" value="5">
                         </label>
                     </div>
+                    <label class="inline-check">
+                        <input id="day-plan-use-fixed-work" type="checkbox" checked>
+                        固定勤務を使う
+                    </label>
                     <div class="form-row">
                         <label>勤務開始<input id="day-plan-work-start" type="time" value="09:00"></label>
                         <label>勤務終了<input id="day-plan-work-end" type="time" value="18:00"></label>
@@ -309,6 +313,35 @@
                         <label>自由終了<input id="day-plan-free-end" type="time" value="23:30"></label>
                     </div>
                 </form>
+                <details class="day-plan-extra">
+                    <summary>仕事 / 遊び / 予定を追加</summary>
+                    <form id="day-plan-block-form" class="compact-form">
+                        <div class="form-row">
+                            <label>
+                                種類
+                                <select id="day-plan-block-type">
+                                    <option value="planned">予定</option>
+                                    <option value="work">仕事</option>
+                                    <option value="play">遊び</option>
+                                    <option value="transit">移動</option>
+                                    <option value="housework">家事</option>
+                                    <option value="rest">休息</option>
+                                    <option value="other">その他</option>
+                                </select>
+                            </label>
+                            <label>
+                                内容
+                                <input id="day-plan-block-title" type="text" placeholder="例: 友達とご飯 / 通院 / 移動">
+                            </label>
+                        </div>
+                        <div class="form-row">
+                            <label>開始<input id="day-plan-block-start" type="time" value="19:00"></label>
+                            <label>終了<input id="day-plan-block-end" type="time" value="20:00"></label>
+                        </div>
+                        <button type="submit">予定を追加</button>
+                    </form>
+                    <div id="day-plan-block-list" class="day-plan-block-list"></div>
+                </details>
                 <div class="day-plan-layout">
                     <div>
                         <h3>割り当てるTodo</h3>
@@ -320,6 +353,16 @@
                     </div>
                 </div>
                 <div id="day-plan-timeline" class="day-plan-timeline"></div>
+                <div class="time-scale-charts" aria-label="週次と月次の活動チャート">
+                    <section>
+                        <h3>週間チャート</h3>
+                        <div id="week-time-chart" class="period-chart"></div>
+                    </section>
+                    <section>
+                        <h3>月間チャート</h3>
+                        <div id="month-time-chart" class="period-chart"></div>
+                    </section>
+                </div>
             </section>
 
             <section class="panel quick-log-panel" aria-labelledby="quick-log-heading" data-view-panel="today">

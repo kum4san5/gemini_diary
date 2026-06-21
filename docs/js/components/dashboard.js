@@ -107,6 +107,7 @@ const defaultState = {
     },
     dayPlan: {
         type: "weekday",
+        useFixedWork: true,
         workStart: "09:00",
         workEnd: "18:00",
         freeStart: "06:30",
@@ -114,6 +115,7 @@ const defaultState = {
         bufferMinutes: 5,
         selectedTaskIds: [],
         taskStarts: {},
+        scheduleBlocks: [],
     },
 };
 
@@ -147,6 +149,8 @@ function normalizeState(state) {
     state.reminders = normalizeReminderSettings(state.reminders);
     state.dayPlan = { ...cloneDefaultState().dayPlan, ...(state.dayPlan || {}) };
     state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
+    state.dayPlan.useFixedWork = state.dayPlan.useFixedWork !== false;
+    state.dayPlan.scheduleBlocks = normalizeScheduleBlocks(state.dayPlan.scheduleBlocks);
     return state;
 }
 
@@ -175,6 +179,18 @@ function normalizeShortcuts(shortcuts) {
         ...shortcut,
         id: shortcut.id || `shortcut-local-${index + 1}`,
     }));
+}
+
+function normalizeScheduleBlocks(blocks) {
+    return (Array.isArray(blocks) ? blocks : [])
+        .map((block, index) => ({
+            id: block.id || `schedule-block-${Date.now()}-${index}`,
+            title: String(block.title || scheduleBlockTypeLabel(block.type || "planned")).trim(),
+            type: block.type || "planned",
+            start: block.start || "19:00",
+            end: block.end || "20:00",
+        }))
+        .filter((block) => timeToMinutes(block.end) > timeToMinutes(block.start));
 }
 
 function saveLocalState(state) {
@@ -574,15 +590,60 @@ function dayPlanBlocks(plan) {
     const freeStart = timeToMinutes(plan.freeStart);
     const freeEnd = timeToMinutes(plan.freeEnd);
     if (freeEnd <= freeStart) return [];
-    if (plan.type === "weekend") return [{ type: "free", start: freeStart, end: freeEnd }];
+    const busyBlocks = dayPlanBusyBlocks(plan)
+        .map((block) => ({
+            ...block,
+            start: Math.max(freeStart, block.start),
+            end: Math.min(freeEnd, block.end),
+        }))
+        .filter((block) => block.end > block.start)
+        .sort((a, b) => a.start - b.start);
+    const freeBlocks = subtractRanges([{ type: "free", start: freeStart, end: freeEnd }], busyBlocks);
+    return [...freeBlocks, ...busyBlocks].sort((a, b) => a.start - b.start);
+}
 
-    const workStart = timeToMinutes(plan.workStart);
-    const workEnd = timeToMinutes(plan.workEnd);
-    return [
-        { type: "free", start: freeStart, end: Math.min(workStart, freeEnd) },
-        { type: "work", start: Math.max(workStart, freeStart), end: Math.min(workEnd, freeEnd) },
-        { type: "free", start: Math.max(workEnd, freeStart), end: freeEnd },
-    ].filter((block) => block.end > block.start);
+function dayPlanBusyBlocks(plan) {
+    const fixedWork = plan.type !== "weekend" && plan.useFixedWork !== false
+        ? [{
+            id: "fixed-work",
+            type: "work",
+            title: "仕事",
+            start: timeToMinutes(plan.workStart),
+            end: timeToMinutes(plan.workEnd),
+            fixed: true,
+        }]
+        : [];
+    const customBlocks = normalizeScheduleBlocks(plan.scheduleBlocks).map((block) => ({
+        ...block,
+        title: block.title || scheduleBlockTypeLabel(block.type),
+        start: timeToMinutes(block.start),
+        end: timeToMinutes(block.end),
+    }));
+    return [...fixedWork, ...customBlocks];
+}
+
+function scheduleBlockTypeLabel(type) {
+    return {
+        work: "仕事",
+        planned: "予定",
+        play: "遊び",
+        transit: "移動",
+        housework: "家事",
+        rest: "休息",
+        other: "その他",
+    }[type] || "予定";
+}
+
+function scheduleBlockTimelineType(type) {
+    return {
+        work: "work",
+        planned: "planned",
+        play: "play",
+        transit: "transit",
+        housework: "housework",
+        rest: "rest",
+        other: "planned",
+    }[type] || "planned";
 }
 
 function buildDayPlan(state) {
@@ -597,6 +658,7 @@ function buildDayPlan(state) {
     const manualRanges = [];
     const manualTasks = selectedTasks.filter((task) => plan.taskStarts?.[task.id]);
     const autoTasks = selectedTasks.filter((task) => !plan.taskStarts?.[task.id]);
+    const busyBlocks = blocks.filter((block) => block.type !== "free");
     let overflowMinutes = 0;
     let conflictMinutes = 0;
 
@@ -605,7 +667,7 @@ function buildDayPlan(state) {
         const preferredStart = timeToMinutes(plan.taskStarts[task.id]);
         const start = Math.min(Math.max(preferredStart, dayStart), Math.max(dayStart, dayEnd - duration));
         const end = Math.min(start + duration, dayEnd);
-        const conflict = overlapsAny({ start, end }, blocks.filter((block) => block.type === "work"));
+        const conflict = overlapsAny({ start, end }, busyBlocks);
         conflictMinutes += conflict ? end - start : 0;
         scheduled.push({ task, start, end, manual: true, conflict });
         manualRanges.push({ start, end: end + buffer });
@@ -642,11 +704,13 @@ function buildDayPlan(state) {
     });
 
     const freeMinutes = blocks.filter((block) => block.type === "free").reduce((sum, block) => sum + block.end - block.start, 0);
-    const workMinutes = blocks.filter((block) => block.type === "work").reduce((sum, block) => sum + block.end - block.start, 0);
+    const workMinutes = busyBlocks.filter((block) => block.type === "work").reduce((sum, block) => sum + block.end - block.start, 0);
+    const plannedMinutes = busyBlocks.filter((block) => block.type !== "work").reduce((sum, block) => sum + block.end - block.start, 0);
     const taskMinutes = scheduled.reduce((sum, item) => sum + item.end - item.start, 0);
     const remainingFreeMinutes = Math.max(0, freeMinutes - taskMinutes - selectedTasks.length * buffer);
+    const totalDayMinutes = Math.max(1, dayEnd - dayStart);
 
-    return { blocks, selectedTasks, scheduled, freeMinutes, workMinutes, taskMinutes, remainingFreeMinutes, overflowMinutes, conflictMinutes };
+    return { blocks, selectedTasks, scheduled, freeMinutes, workMinutes, plannedMinutes, taskMinutes, remainingFreeMinutes, overflowMinutes, conflictMinutes, totalDayMinutes };
 }
 
 function overlapsAny(range, ranges) {
@@ -691,10 +755,12 @@ function renderDayPlanner(state) {
     const plan = state.dayPlan;
     document.getElementById("day-plan-type").value = plan.type;
     document.getElementById("day-plan-buffer").value = plan.bufferMinutes;
+    document.getElementById("day-plan-use-fixed-work").checked = plan.useFixedWork !== false;
     document.getElementById("day-plan-work-start").value = plan.workStart;
     document.getElementById("day-plan-work-end").value = plan.workEnd;
     document.getElementById("day-plan-free-start").value = plan.freeStart;
     document.getElementById("day-plan-free-end").value = plan.freeEnd;
+    renderScheduleBlocks(plan);
 
     const candidateTasks = (state.tasks || []).filter((task) => !task.completed).slice(0, 12);
     const dayStart = timeToMinutes(plan.freeStart);
@@ -722,28 +788,31 @@ function renderDayPlanner(state) {
         : `<p class="placeholder">未完了Todoがありません。</p>`;
 
     const allocation = buildDayPlan(state);
-    const total = Math.max(1, allocation.freeMinutes + allocation.workMinutes);
+    const total = allocation.totalDayMinutes;
     const taskAngle = (allocation.taskMinutes / total) * 360;
     const workAngle = ((allocation.taskMinutes + allocation.workMinutes) / total) * 360;
+    const plannedAngle = ((allocation.taskMinutes + allocation.workMinutes + allocation.plannedMinutes) / total) * 360;
     chart.style.setProperty("--task-angle", `${taskAngle}deg`);
     chart.style.setProperty("--work-angle", `${workAngle}deg`);
+    chart.style.setProperty("--planned-angle", `${plannedAngle}deg`);
     chart.innerHTML = `<strong>${Math.round((allocation.taskMinutes / Math.max(1, allocation.freeMinutes)) * 100)}%</strong><span>自由時間使用</span>`;
 
     summary.innerHTML = `
         <p><strong>${formatDuration(allocation.taskMinutes)}</strong> / 自由時間 ${formatDuration(allocation.freeMinutes)}</p>
-        <p>仕事 ${formatDuration(allocation.workMinutes)} / 余白 ${formatDuration(allocation.remainingFreeMinutes)}</p>
-        ${allocation.conflictMinutes ? `<p class="danger-text">勤務時間と重なり: ${formatDuration(allocation.conflictMinutes)}</p>` : ""}
+        <p>仕事 ${formatDuration(allocation.workMinutes)} / 予定 ${formatDuration(allocation.plannedMinutes)} / 余白 ${formatDuration(allocation.remainingFreeMinutes)}</p>
+        ${allocation.conflictMinutes ? `<p class="danger-text">予定と重なり: ${formatDuration(allocation.conflictMinutes)}</p>` : ""}
         ${allocation.overflowMinutes ? `<p class="danger-text">入りきらない: ${formatDuration(allocation.overflowMinutes)}</p>` : ""}
     `;
 
     const widthBase = Math.max(1, dayEnd - dayStart);
-    const workRows = allocation.blocks
-        .filter((block) => block.type === "work")
-        .map((block) => timelineRow("仕事", block.start, block.end, "work", dayStart, widthBase));
+    const busyRows = allocation.blocks
+        .filter((block) => block.type !== "free")
+        .map((block) => timelineRow(block.title || scheduleBlockTypeLabel(block.type), block.start, block.end, scheduleBlockTimelineType(block.type), dayStart, widthBase, block.fixed));
     const taskRows = allocation.scheduled.map((item) => timelineRow(item.task.title, item.start, item.end, item.conflict ? "conflict" : "task", dayStart, widthBase, item.manual));
-    timeline.innerHTML = [...workRows, ...taskRows].length
-        ? [...workRows, ...taskRows].sort((a, b) => Number(a.datasetStart) - Number(b.datasetStart)).map((row) => row.html).join("")
-        : `<p class="placeholder">Todoを選ぶとタイムチャートを表示します。</p>`;
+    timeline.innerHTML = [...busyRows, ...taskRows].length
+        ? [...busyRows, ...taskRows].sort((a, b) => Number(a.datasetStart) - Number(b.datasetStart)).map((row) => row.html).join("")
+        : `<p class="placeholder">予定かTodoを選ぶとタイムチャートを表示します。</p>`;
+    renderPeriodCharts(state);
 }
 
 function timelineRow(title, start, end, type, dayStart, widthBase, manual = false) {
@@ -760,6 +829,77 @@ function timelineRow(title, start, end, type, dayStart, widthBase, manual = fals
             </div>
         `,
     };
+}
+
+function renderScheduleBlocks(plan) {
+    const list = document.getElementById("day-plan-block-list");
+    if (!list) return;
+    const blocks = normalizeScheduleBlocks(plan.scheduleBlocks);
+    list.innerHTML = blocks.length
+        ? blocks.map((block) => `
+            <article class="day-plan-block-item">
+                <span class="status-pill">${escapeHtml(scheduleBlockTypeLabel(block.type))}</span>
+                <strong>${escapeHtml(block.title || scheduleBlockTypeLabel(block.type))}</strong>
+                <small>${escapeHtml(block.start)} - ${escapeHtml(block.end)}</small>
+                <button class="item-action danger-text" type="button" data-day-plan-block-remove="${escapeHtml(block.id)}">削除</button>
+            </article>
+        `).join("")
+        : `<p class="placeholder">仕事以外の予定や、変動する勤務時間を追加できます。</p>`;
+}
+
+function renderPeriodCharts(state) {
+    const weekTarget = document.getElementById("week-time-chart");
+    const monthTarget = document.getElementById("month-time-chart");
+    if (!weekTarget || !monthTarget) return;
+    weekTarget.innerHTML = renderPeriodBarList(buildWeekActivity(state), "今週の活動ログはまだありません。");
+    monthTarget.innerHTML = renderPeriodBarList(buildMonthActivityByArea(state), "今月の活動ログはまだありません。");
+}
+
+function buildWeekActivity(state) {
+    return Array.from({ length: 7 }, (_, index) => {
+        const key = dateKeyOffset(index - 6);
+        const minutes = (state.logs || [])
+            .filter((log) => normalizeDateKey(log.date) === key)
+            .reduce((sum, log) => sum + Number(log.minutes || 0), 0);
+        return { label: key.slice(5), minutes };
+    });
+}
+
+function buildMonthActivityByArea(state) {
+    const month = todayKey().slice(0, 7);
+    const groups = new Map();
+    (state.logs || [])
+        .filter((log) => normalizeDateKey(log.date).startsWith(month))
+        .forEach((log) => {
+            const area = log.area || "その他";
+            groups.set(area, (groups.get(area) || 0) + Number(log.minutes || 0));
+        });
+    return Array.from(groups.entries())
+        .map(([label, minutes]) => ({ label, minutes }))
+        .sort((a, b) => b.minutes - a.minutes)
+        .slice(0, 8);
+}
+
+function renderPeriodBarList(items, emptyText) {
+    const maxMinutes = Math.max(1, ...items.map((item) => Number(item.minutes || 0)));
+    const hasValue = items.some((item) => Number(item.minutes || 0) > 0);
+    if (!hasValue) return `<p class="placeholder">${emptyText}</p>`;
+    return items.map((item) => {
+        const percent = Math.max(3, (Number(item.minutes || 0) / maxMinutes) * 100);
+        return `
+            <div class="period-row">
+                <span>${escapeHtml(item.label)}</span>
+                <div class="period-track"><b style="width:${percent}%"></b></div>
+                <strong>${formatDuration(Number(item.minutes || 0))}</strong>
+            </div>
+        `;
+    }).join("");
+}
+
+function dateKeyOffset(offsetDays) {
+    const date = new Date();
+    date.setDate(date.getDate() + offsetDays);
+    return todayKey(date);
 }
 
 function renderTasks(state) {
@@ -1517,11 +1657,14 @@ function setupDayPlanner(state) {
     const form = document.getElementById("day-plan-settings");
     const picker = document.getElementById("day-plan-task-picker");
     const autoButton = document.getElementById("day-plan-auto");
+    const blockForm = document.getElementById("day-plan-block-form");
+    const blockList = document.getElementById("day-plan-block-list");
 
-    form?.addEventListener("input", () => {
+    const updateSettings = () => {
         state.dayPlan = {
             ...state.dayPlan,
             type: document.getElementById("day-plan-type").value,
+            useFixedWork: document.getElementById("day-plan-use-fixed-work").checked,
             bufferMinutes: Number(document.getElementById("day-plan-buffer").value || 0),
             workStart: document.getElementById("day-plan-work-start").value,
             workEnd: document.getElementById("day-plan-work-end").value,
@@ -1530,12 +1673,10 @@ function setupDayPlanner(state) {
         };
         saveLocalState(state);
         renderDayPlanner(state);
-    });
+    };
 
-    form?.addEventListener("change", () => {
-        saveLocalState(state);
-        renderDayPlanner(state);
-    });
+    form?.addEventListener("input", updateSettings);
+    form?.addEventListener("change", updateSettings);
 
     picker?.addEventListener("change", (event) => {
         const checkbox = event.target.closest("[data-day-plan-task]");
@@ -1584,6 +1725,41 @@ function setupDayPlanner(state) {
 
     autoButton?.addEventListener("click", () => {
         state.dayPlan.selectedTaskIds = recommendedDayPlanTaskIds(state);
+        saveLocalState(state);
+        renderDayPlanner(state);
+    });
+
+    blockForm?.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const type = document.getElementById("day-plan-block-type").value;
+        const start = document.getElementById("day-plan-block-start").value;
+        const end = document.getElementById("day-plan-block-end").value;
+        if (!start || !end || timeToMinutes(end) <= timeToMinutes(start)) {
+            showToast("予定の開始/終了時間を確認してください。", "error");
+            return;
+        }
+        const title = document.getElementById("day-plan-block-title").value.trim() || scheduleBlockTypeLabel(type);
+        state.dayPlan.scheduleBlocks = normalizeScheduleBlocks([
+            ...(state.dayPlan.scheduleBlocks || []),
+            {
+                id: `schedule-block-${Date.now()}`,
+                type,
+                title,
+                start,
+                end,
+            },
+        ]);
+        document.getElementById("day-plan-block-title").value = "";
+        saveLocalState(state);
+        renderDayPlanner(state);
+        showToast("予定ブロックを追加しました。", "success");
+    });
+
+    blockList?.addEventListener("click", (event) => {
+        const removeButton = event.target.closest("[data-day-plan-block-remove]");
+        if (!removeButton) return;
+        state.dayPlan.scheduleBlocks = (state.dayPlan.scheduleBlocks || [])
+            .filter((block) => block.id !== removeButton.dataset.dayPlanBlockRemove);
         saveLocalState(state);
         renderDayPlanner(state);
     });
@@ -3563,6 +3739,7 @@ export async function setupDashboard() {
 }
 
 export const dashboardTestHooks = {
+    buildDayPlan,
     calculateLifeBalance,
     calculateMetrics,
     buildGoalPlan,

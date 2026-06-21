@@ -110,6 +110,34 @@ describe("dashboard classification helpers", () => {
     expect(input.memo).toContain("ネットワーク復習");
   });
 
+  test("uses custom schedule blocks when calculating day plan availability", () => {
+    const allocation = dashboardTestHooks.buildDayPlan({
+      dayPlan: {
+        type: "weekday",
+        useFixedWork: false,
+        freeStart: "08:00",
+        freeEnd: "22:00",
+        workStart: "09:00",
+        workEnd: "18:00",
+        bufferMinutes: 0,
+        selectedTaskIds: ["task-1"],
+        taskStarts: {},
+        scheduleBlocks: [
+          { id: "work-shift", type: "work", title: "遅番", start: "12:00", end: "17:00" },
+          { id: "play", type: "play", title: "友達とご飯", start: "19:00", end: "21:00" },
+        ],
+      },
+      tasks: [
+        { id: "task-1", title: "開発する", completed: false, estimatedMinutes: 60 },
+      ],
+    });
+
+    expect(allocation.workMinutes).toBe(300);
+    expect(allocation.plannedMinutes).toBe(120);
+    expect(allocation.freeMinutes).toBe(420);
+    expect(allocation.taskMinutes).toBe(60);
+  });
+
   test("uses Japan time for date keys", () => {
     expect(dashboardTestHooks.todayKey(new Date("2026-06-20T15:30:00.000Z"))).toBe("2026-06-21");
     expect(dashboardTestHooks.normalizeDateKey("2026-06-20T15:30:00.000Z")).toBe("2026-06-21");

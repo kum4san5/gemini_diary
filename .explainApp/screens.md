@@ -22,6 +22,8 @@ flowchart TD
 - Resourceを開く
 - Reminderで脱線前に戻る
 - カテゴリ別に今日の偏りを見る
+- 仕事、遊び、移動、家事などの予定を入れて可動時間を見る
+- 週間/月間の活動量を見る
 - 今日の状態と活動量を見る
 - 必要最小限のログを残す
 
@@ -30,7 +32,7 @@ PC:
 ```text
 [Start Console: 今日の一手 + Timer + Resources + Reminder] [Progress]
 [Life Balance] [Categories] [Quick Log]
-[Day Planner 横長] [Todo一覧] [Shortcuts]
+[Day Planner: 予定 + Todo + 週/月チャート] [Todo一覧] [Shortcuts]
 ```
 
 タブレット:
@@ -53,7 +55,7 @@ PC:
 [Life Balance]
 [カテゴリ別の今日]
 [Quick Log]
-[時間配分]
+[時間配分 / 週月チャート]
 [Todo一覧]
 ```
 

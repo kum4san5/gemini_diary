@@ -2513,3 +2513,278 @@ body[data-active-view="settings"] .settings-panel {
         max-width: 100%;
     }
 }
+
+/* Compact category and reminder polish */
+:root {
+    --bg-color: #f6f7f4;
+    --panel-soft: #eef3f0;
+    --primary-color: #16715b;
+    --primary-strong: #0f4f42;
+    --accent-color: #d79a2b;
+    --focus-blue: #2563eb;
+    --focus-violet: #7c3aed;
+    --focus-rose: #db2777;
+    --focus-cyan: #0891b2;
+}
+
+body.dark-mode {
+    --bg-color: #141816;
+    --panel-bg: #1f2421;
+    --panel-soft: #252d2a;
+    --primary-color: #66d1a8;
+    --primary-strong: #a2e8cb;
+    --accent-color: #efbd5d;
+    --focus-blue: #7aa2ff;
+    --focus-violet: #b193ff;
+    --focus-rose: #fb82ba;
+    --focus-cyan: #68d4e7;
+}
+
+.dashboard-header {
+    align-items: flex-start;
+}
+
+.header-actions,
+.view-tabs {
+    gap: 8px;
+}
+
+.action-link,
+.view-tab {
+    min-height: 38px;
+    border-radius: 8px;
+}
+
+.metrics-grid {
+    gap: 10px;
+}
+
+.metric-panel {
+    min-height: 82px;
+    padding: 13px;
+}
+
+.metric-panel strong {
+    font-size: clamp(1.45rem, 2.2vw, 2rem);
+}
+
+.panel {
+    padding: 14px;
+}
+
+.panel-header {
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.panel-header h2 {
+    font-size: 1rem;
+}
+
+.status-pill,
+.priority-pill,
+.state-pill {
+    min-height: 22px;
+    padding: 3px 9px;
+    font-size: 0.78rem;
+}
+
+.next-action-panel {
+    grid-column: span 8;
+}
+
+.category-panel {
+    order: 4;
+    grid-column: span 4;
+}
+
+.quick-log-panel {
+    order: 5;
+}
+
+.day-plan-panel {
+    order: 6;
+}
+
+.todo-panel {
+    order: 7;
+}
+
+.shortcuts-panel {
+    order: 8;
+}
+
+.ai-panel {
+    order: 9;
+}
+
+.category-summary {
+    display: grid;
+    gap: 8px;
+}
+
+.category-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 58px;
+    padding: 10px 11px;
+    border: 1px solid color-mix(in srgb, var(--category-accent) 28%, var(--border-color));
+    border-left: 4px solid var(--category-accent);
+    border-radius: 8px;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--category-accent) 11%, transparent), transparent 58%),
+        color-mix(in srgb, var(--panel-bg) 86%, var(--panel-soft));
+}
+
+.category-chip strong,
+.category-chip span,
+.category-chip small {
+    display: block;
+}
+
+.category-chip strong {
+    font-size: 0.95rem;
+}
+
+.category-chip span,
+.category-chip small {
+    color: var(--muted-color);
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.category-chip p {
+    margin: 0;
+    color: var(--text-color);
+    font-weight: 900;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.reminder-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--focus-cyan) 28%, var(--border-color));
+    border-radius: 8px;
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--focus-cyan) 9%, transparent), transparent 62%),
+        color-mix(in srgb, var(--panel-bg) 88%, var(--panel-soft));
+}
+
+.reminder-copy p {
+    margin: 3px 0 0;
+    color: color-mix(in srgb, var(--text-color) 82%, var(--muted-color));
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.reminder-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.reminder-controls label {
+    display: grid;
+    gap: 4px;
+    min-width: 88px;
+    color: var(--muted-color);
+    font-size: 0.74rem;
+    font-weight: 900;
+}
+
+.reminder-controls select,
+.reminder-controls button {
+    min-height: 36px;
+    border-radius: 8px;
+}
+
+.reminder-controls button {
+    width: auto;
+    padding: 0 11px;
+    white-space: nowrap;
+}
+
+.start-card h3 {
+    font-size: clamp(1.24rem, 1.8vw, 1.9rem);
+}
+
+.start-actions button {
+    min-height: 46px;
+}
+
+.task-meta {
+    gap: 5px;
+}
+
+@media (max-width: 1120px) {
+    .category-panel {
+        grid-column: span 2;
+    }
+
+    .reminder-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .reminder-controls {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 760px) {
+    .panel {
+        padding: 13px;
+    }
+
+    .category-panel {
+        order: 4;
+        grid-column: span 1;
+    }
+
+    .quick-log-panel {
+        order: 5;
+    }
+
+    .day-plan-panel {
+        order: 6;
+    }
+
+    .todo-panel {
+        order: 7;
+    }
+
+    .shortcuts-panel {
+        order: 8;
+    }
+
+    .ai-panel {
+        order: 9;
+    }
+
+    .category-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .category-chip {
+        min-height: 54px;
+    }
+
+    .reminder-controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .reminder-controls label,
+    .reminder-controls button {
+        width: 100%;
+    }
+}

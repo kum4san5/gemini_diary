@@ -35,6 +35,8 @@ npm run explain
 | 機能 | 役割 | 毎日使う度 |
 | --- | --- | --- |
 | Start Console | 今日の一手、Timer、Resourceをまとめる | 高 |
+| Reminder | 開いている間に今日の一手へ戻す | 高 |
+| Categories | TodoとLogを領域別に要約する | 高 |
 | Life Balance | 幸福、健康、成長、お金、創作、休息を見る | 中 |
 | Quick Log | 最小入力で活動を残す | 高 |
 | Day Planner | 自由時間とTodoの配分を見る | 中 |
@@ -49,6 +51,7 @@ npm run explain
 ```mermaid
 flowchart TD
     A[アプリを開く] --> B[Start Consoleを見る]
+    A --> R[ReminderをONにする]
     B --> C{今日の一手がある?}
     C -->|ある| D[Resourceを開く]
     C -->|ない| E[TodoかKnowledge Actionを1つ作る]
@@ -57,6 +60,7 @@ flowchart TD
     F --> G[Timer終了]
     G --> H[Learning Logへ記録]
     H --> I[今日も再起動できた]
+    R --> B
 ```
 
 ## 使い方の基本
@@ -66,6 +70,7 @@ flowchart TD
 3. 「5分だけ始める」を押す。
 4. 必要なら「開くもの」から教材、Notion、開発環境を開く。
 5. 終わったら「記録する」を押す。
+6. 脱線しやすい日はReminderをONにして、15分後または1時間後に戻る。
 
 ## 設計原則
 

@@ -20,15 +20,17 @@ flowchart TD
 - 今日の一手を決める
 - 5分/15分で始める
 - Resourceを開く
+- Reminderで脱線前に戻る
+- カテゴリ別に今日の偏りを見る
 - 今日の状態と活動量を見る
 - 必要最小限のログを残す
 
 PC:
 
 ```text
-[Start Console: 今日の一手 + Timer + Resources] [Progress]
-[Life Balance] [Quick Log] [Shortcuts]
-[Day Planner 横長] [Todo一覧]
+[Start Console: 今日の一手 + Timer + Resources + Reminder] [Progress]
+[Life Balance] [Categories] [Quick Log]
+[Day Planner 横長] [Todo一覧] [Shortcuts]
 ```
 
 タブレット:
@@ -36,9 +38,9 @@ PC:
 ```text
 [Start Console]
 [Progress] [Life Balance]
-[Quick Log] [Shortcuts]
+[Categories] [Quick Log]
 [Day Planner]
-[Todo一覧]
+[Todo一覧] [Shortcuts]
 ```
 
 スマホ:
@@ -49,6 +51,7 @@ PC:
 [開くもの]
 [今日の活動]
 [Life Balance]
+[カテゴリ別の今日]
 [Quick Log]
 [時間配分]
 [Todo一覧]

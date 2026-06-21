@@ -145,7 +145,7 @@
             <article class="panel">
                 <p class="eyebrow">Purpose</p>
                 <h2>管理するためではなく、始めるためのホーム画面</h2>
-                <p class="ai-summary">Life Dashboardは、タスクを完璧に整理するためだけのアプリではありません。今日の一手を選び、Resourceを開き、5分だけ始め、実績をLearning Logに残すための生活OSです。</p>
+                <p class="ai-summary">Life Dashboardは、タスクを完璧に整理するためだけのアプリではありません。今日の一手を選び、Resourceを開き、5分だけ始め、必要ならReminderで戻り、実績をLearning Logに残すための生活OSです。</p>
                 <div class="guide-links">
                     <a class="guide-link" href="#flow">Flow</a>
                     <a class="guide-link" href="#screens">Screens</a>
@@ -158,11 +158,13 @@
                 <pre class="mermaid">
 flowchart TD
     A[アプリを開く] --> B[Start Console]
+    A --> R[Reminder]
     B --> C[今日の一手]
     C --> D[Resourceを開く]
     D --> E[5分だけ始める]
     E --> F[Learning Log]
     F --> G[今日も再起動できた]
+    R --> B
                 </pre>
             </article>
         </section>
@@ -174,7 +176,7 @@ flowchart TD
                 <article class="guide-step"><span>1</span><h3>見る</h3><p>Todayで「今やること」を確認します。</p></article>
                 <article class="guide-step"><span>2</span><h3>開く</h3><p>関連ResourceやShortcutを開きます。</p></article>
                 <article class="guide-step"><span>3</span><h3>始める</h3><p>5分だけ、または15分集中します。</p></article>
-                <article class="guide-step"><span>4</span><h3>残す</h3><p>Timer終了後、Learning Logに保存します。</p></article>
+                <article class="guide-step"><span>4</span><h3>残す</h3><p>Timer終了後、Learning Logに保存します。脱線しやすい日はReminderをONにします。</p></article>
             </div>
         </section>
 
@@ -182,7 +184,7 @@ flowchart TD
             <p class="eyebrow">Screens</p>
             <h2>画面ごとの役割</h2>
             <div class="guide-grid">
-                <article class="guide-card"><h3>Today</h3><p>Start Console、Life Balance、Quick Log、時間配分。</p></article>
+                <article class="guide-card"><h3>Today</h3><p>Start Console、Reminder、カテゴリ別の今日、Life Balance、Quick Log、時間配分。</p></article>
                 <article class="guide-card"><h3>Goals</h3><p>長期目標をTask、Habit、Resourceへ分解。</p></article>
                 <article class="guide-card"><h3>Knowledge</h3><p>学びを残し、ActionableならTodo化。</p></article>
                 <article class="guide-card"><h3>Logs</h3><p>活動ログ、日次レビュー、英語日記。</p></article>

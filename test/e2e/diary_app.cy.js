@@ -51,6 +51,8 @@ describe("Life Dashboard", () => {
   it("loads the current GitHub Pages frontend", () => {
     cy.contains("h1", "Life Dashboard").should("be.visible");
     cy.get("#start-console").should("be.visible");
+    cy.get("#reminder-panel").should("be.visible");
+    cy.get("#category-summary").should("be.visible");
     cy.get("#life-balance-summary").should("be.visible");
     cy.get("#todo-board").should("be.visible");
     cy.get("[data-view-tab='logs']").click();
@@ -89,6 +91,8 @@ describe("Life Dashboard", () => {
       cy.viewport(width, height);
       cy.get("[data-view-tab='today']").click();
       cy.get("#start-console").should("be.visible");
+      cy.get("#reminder-panel").should("be.visible");
+      cy.get("#category-summary").should("be.visible");
       cy.get("#life-balance-summary").should("be.visible");
       cy.document().then((doc) => {
         expect(doc.documentElement.scrollWidth).to.be.lte(doc.documentElement.clientWidth + 2);

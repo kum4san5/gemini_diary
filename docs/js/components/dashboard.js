@@ -8,6 +8,7 @@ import { renderDailyReviewListHtml, renderLogListHtml } from "./renderLogs.js";
 import { renderSchemaCheckResultHtml } from "./renderSettings.js";
 
 let sessionTimerId = null;
+let reminderTimerId = null;
 
 const apCategories = ["過去問道場", "模擬試験", "苦手復習", "知識整理", "動画", "読書", "調査", "その他"];
 const apGenres = ["セキュリティ", "ネットワーク", "データベース", "マネジメント", "ストラテジ", "システム開発", "アルゴリズム", "その他"];
@@ -38,6 +39,20 @@ const genreByArea = {
     "お金": ["収入", "支出", "投資", "固定費", "調査", "その他"],
     "健康": ["運動", "睡眠", "食事", "メンタル", "通院", "その他"],
     "その他": ["その他"],
+};
+
+const categoryAccentColors = {
+    "学習": "#2563eb",
+    "応用情報": "#2563eb",
+    "プログラミング": "#7c3aed",
+    "開発": "#7c3aed",
+    "英語": "#0891b2",
+    "読書": "#0f766e",
+    "創作": "#db2777",
+    "生活": "#64748b",
+    "お金": "#ca8a04",
+    "健康": "#16a34a",
+    "その他": "#475569",
 };
 
 const defaultState = {
@@ -82,6 +97,14 @@ const defaultState = {
     ],
     syncStatus: "local",
     activeSession: null,
+    reminders: {
+        enabled: false,
+        intervalMinutes: 60,
+        quietStart: "23:00",
+        quietEnd: "07:00",
+        nextAt: "",
+        lastNotifiedAt: "",
+    },
     dayPlan: {
         type: "weekday",
         workStart: "09:00",
@@ -121,9 +144,20 @@ function normalizeState(state) {
     state.financeSnapshots = Array.isArray(state.financeSnapshots) ? state.financeSnapshots : [];
     state.learningTopics = Array.isArray(state.learningTopics) ? state.learningTopics : [];
     state.activeSession = normalizeActiveSession(state.activeSession);
+    state.reminders = normalizeReminderSettings(state.reminders);
     state.dayPlan = { ...cloneDefaultState().dayPlan, ...(state.dayPlan || {}) };
     state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
     return state;
+}
+
+function normalizeReminderSettings(reminders) {
+    const defaults = cloneDefaultState().reminders;
+    const current = reminders || {};
+    return {
+        ...defaults,
+        ...current,
+        intervalMinutes: Math.max(5, Number(current.intervalMinutes || defaults.intervalMinutes)),
+    };
 }
 
 function normalizeActiveSession(session) {
@@ -1111,6 +1145,114 @@ function renderLifeBalance(state) {
     }
 }
 
+function renderCategorySummary(state) {
+    const target = document.getElementById("category-summary");
+    if (!target) return;
+
+    const today = todayKey();
+    const groups = new Map();
+    const order = ["学習", "応用情報", "開発", "プログラミング", "英語", "読書", "創作", "生活", "お金", "健康", "その他"];
+
+    const ensureGroup = (area) => {
+        const label = area || "その他";
+        if (!groups.has(label)) groups.set(label, { area: label, tasks: 0, minutes: 0 });
+        return groups.get(label);
+    };
+
+    (state.tasks || []).forEach((task) => {
+        if (task.completed) return;
+        const group = ensureGroup(task.area || "その他");
+        group.tasks += 1;
+    });
+
+    (state.logs || [])
+        .filter((log) => normalizeDateKey(log.date) === today)
+        .forEach((log) => {
+            const group = ensureGroup(log.area || "その他");
+            group.minutes += Number(log.minutes || 0);
+        });
+
+    const ranked = Array.from(groups.values())
+        .filter((group) => group.tasks || group.minutes)
+        .sort((a, b) => {
+            const score = (group) => group.tasks * 60 + group.minutes;
+            const diff = score(b) - score(a);
+            if (diff) return diff;
+            const orderA = order.includes(a.area) ? order.indexOf(a.area) : order.length;
+            const orderB = order.includes(b.area) ? order.indexOf(b.area) : order.length;
+            return orderA - orderB;
+        })
+        .slice(0, 8);
+
+    if (!ranked.length) {
+        target.innerHTML = `<p class="placeholder">Todoか活動ログが入ると、カテゴリ別の配分がここに出ます。</p>`;
+        return;
+    }
+
+    target.innerHTML = ranked.map((group) => `
+        <article class="category-chip" style="--category-accent:${areaAccent(group.area)}">
+            <div>
+                <strong>${escapeHtml(group.area)}</strong>
+                <span>${group.tasks ? `未完了 ${group.tasks}件` : "未完了なし"}</span>
+            </div>
+            <p>${formatDuration(group.minutes)}<small>今日の記録</small></p>
+        </article>
+    `).join("");
+}
+
+function renderReminderPanel(state) {
+    const status = document.getElementById("reminder-status");
+    const interval = document.getElementById("reminder-interval");
+    const enableButton = document.querySelector("[data-reminder-enable]");
+    const snoozeButton = document.querySelector("[data-reminder-snooze]");
+    const testButton = document.querySelector("[data-reminder-test]");
+    if (!status) return;
+
+    const settings = state.reminders || normalizeReminderSettings();
+    const notificationApi = typeof window !== "undefined" ? window.Notification : null;
+    const permission = notificationApi ? notificationApi.permission : "unsupported";
+    const nextLabel = settings.nextAt ? formatReminderDateTime(settings.nextAt) : "";
+
+    if (interval && interval.value !== String(settings.intervalMinutes)) interval.value = String(settings.intervalMinutes);
+
+    if (!notificationApi) {
+        status.textContent = settings.enabled
+            ? `ページ内リマインドON。次は${nextLabel || `${settings.intervalMinutes}分後`}ごろ戻します。`
+            : "このブラウザでは通知を使えません。ページ内のリマインドだけ表示します。";
+    } else if (permission === "denied") {
+        status.textContent = "通知がブロックされています。ブラウザ設定から許可すると使えます。";
+    } else if (permission === "default" && settings.enabled) {
+        status.textContent = nextLabel
+            ? `ページ内リマインドON。次は${nextLabel}ごろ戻します。通知許可でブラウザ通知も使えます。`
+            : `ページ内リマインドON。通知許可でブラウザ通知も使えます。`;
+    } else if (settings.enabled) {
+        status.textContent = nextLabel
+            ? `通知ON。次は${nextLabel}ごろ、今日の一手へ戻します。`
+            : `通知ON。${settings.intervalMinutes}分ごとに、今日の一手へ戻します。`;
+    } else {
+        status.textContent = "通知を許可すると、開いている間だけ小さく戻ってこられます。";
+    }
+
+    if (enableButton) {
+        enableButton.disabled = permission === "denied";
+        enableButton.textContent = !notificationApi
+            ? settings.enabled ? "リマインド停止" : "ページ内で使う"
+            : settings.enabled && permission === "granted" ? "通知を止める" : "通知を許可";
+    }
+    if (snoozeButton) snoozeButton.disabled = false;
+    if (testButton) testButton.disabled = permission === "denied";
+}
+
+function areaAccent(area) {
+    return categoryAccentColors[area] || categoryAccentColors["その他"];
+}
+
+function formatReminderDateTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("ja-JP", { hour: "2-digit", minute: "2-digit" }).format(date);
+}
+
 function setInputValue(id, value) {
     const input = document.getElementById(id);
     if (input && input.value !== String(value ?? "")) input.value = value ?? "";
@@ -1362,8 +1504,10 @@ function render(state) {
     renderGoalPlanPreview(state);
     renderMetrics(state);
     renderLifeBalance(state);
+    renderCategorySummary(state);
     renderNextAction(state);
     renderStartConsole(state);
+    renderReminderPanel(state);
     renderSyncStatus(state);
     renderManagementLists(state);
     populateRelationSelects(state);
@@ -1480,6 +1624,139 @@ function setupStartConsole(state) {
         renderStartConsole(state);
         if (wasRunning && finished) showToast("一区切りです。記録するか、少しだけ続けられます。", "success");
     }, 1000);
+}
+
+function setupReminderControls(state) {
+    const panel = document.getElementById("reminder-panel");
+    if (!panel) return;
+
+    panel.addEventListener("change", (event) => {
+        if (event.target.id !== "reminder-interval") return;
+        state.reminders.intervalMinutes = Number(event.target.value || 60);
+        if (state.reminders.enabled) scheduleNextReminder(state, state.reminders.intervalMinutes);
+        saveLocalState(state);
+        renderReminderPanel(state);
+    });
+
+    panel.addEventListener("click", async (event) => {
+        if (event.target.closest("[data-reminder-enable]")) {
+            await toggleReminders(state);
+            return;
+        }
+
+        const snoozeButton = event.target.closest("[data-reminder-snooze]");
+        if (snoozeButton) {
+            scheduleNextReminder(state, Number(snoozeButton.dataset.reminderSnooze || 15));
+            state.reminders.enabled = true;
+            saveLocalState(state);
+            renderReminderPanel(state);
+            showToast("15分後に、今日の一手へ戻します。", "success");
+            return;
+        }
+
+        if (event.target.closest("[data-reminder-test]")) {
+            sendReminderNotification(state, true);
+        }
+    });
+
+    if (reminderTimerId) window.clearInterval(reminderTimerId);
+    reminderTimerId = window.setInterval(() => checkReminderDue(state), 30000);
+    checkReminderDue(state);
+}
+
+async function toggleReminders(state) {
+    const notificationApi = typeof window !== "undefined" ? window.Notification : null;
+
+    if (state.reminders.enabled && (!notificationApi || notificationApi.permission === "granted")) {
+        state.reminders.enabled = false;
+        state.reminders.nextAt = "";
+        saveLocalState(state);
+        renderReminderPanel(state);
+        showToast("リマインドを停止しました。", "info");
+        return;
+    }
+
+    if (notificationApi && notificationApi.permission === "default") {
+        await notificationApi.requestPermission();
+    }
+
+    if (notificationApi && notificationApi.permission === "denied") {
+        renderReminderPanel(state);
+        showToast("ブラウザ通知がブロックされています。設定から許可できます。", "error");
+        return;
+    }
+
+    state.reminders.enabled = true;
+    if (!state.reminders.nextAt) scheduleNextReminder(state, state.reminders.intervalMinutes);
+    saveLocalState(state);
+    renderReminderPanel(state);
+    showToast("リマインドをONにしました。", "success");
+}
+
+function scheduleNextReminder(state, minutes) {
+    const delayMinutes = Math.max(1, Number(minutes || state.reminders?.intervalMinutes || 60));
+    state.reminders.nextAt = new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
+}
+
+function checkReminderDue(state) {
+    if (!state.reminders?.enabled) return;
+    if (!state.reminders.nextAt) {
+        scheduleNextReminder(state, state.reminders.intervalMinutes);
+        saveLocalState(state);
+        renderReminderPanel(state);
+        return;
+    }
+
+    const dueAt = new Date(state.reminders.nextAt).getTime();
+    if (!Number.isFinite(dueAt) || Date.now() < dueAt) return;
+
+    if (isReminderQuietTime(state.reminders)) {
+        scheduleNextReminder(state, 15);
+        saveLocalState(state);
+        renderReminderPanel(state);
+        return;
+    }
+
+    sendReminderNotification(state);
+    scheduleNextReminder(state, state.reminders.intervalMinutes);
+    saveLocalState(state);
+    renderReminderPanel(state);
+}
+
+function isReminderQuietTime(settings) {
+    const now = new Date();
+    const current = now.getHours() * 60 + now.getMinutes();
+    const start = timeToMinutes(settings.quietStart || "23:00");
+    const end = timeToMinutes(settings.quietEnd || "07:00");
+    if (start === end) return false;
+    if (start < end) return current >= start && current < end;
+    return current >= start || current < end;
+}
+
+function sendReminderNotification(state, forced = false) {
+    const message = reminderMessage(state);
+    const notificationApi = typeof window !== "undefined" ? window.Notification : null;
+
+    if (notificationApi && notificationApi.permission === "granted") {
+        new notificationApi("Life Dashboard", {
+            body: message,
+            tag: "life-dashboard-reminder",
+            renotify: forced,
+        });
+    }
+
+    state.reminders.lastNotifiedAt = new Date().toISOString();
+    saveLocalState(state);
+    renderReminderPanel(state);
+    showToast(message, forced ? "success" : "info");
+}
+
+function reminderMessage(state) {
+    const action = selectNextAction(state);
+    if (action?.type === "task") return `「${action.task.title}」を5分だけ始める時間です。`;
+    if (action?.type === "note") return `実行候補「${action.note.actionText || action.note.title}」をTodoにして進められます。`;
+    if (action?.type === "goal") return `Goal「${action.goal.title}」から小さなTodoを1つ作れます。`;
+    return "Life Dashboardを開いて、今日の一手を1つだけ決めましょう。";
 }
 
 function setupLifeBalanceForms(state) {
@@ -1743,6 +2020,7 @@ async function refreshFromNotion(state) {
         moodLogs: state.moodLogs,
         financeSnapshots: state.financeSnapshots,
         learningTopics: state.learningTopics,
+        reminders: state.reminders,
     };
     const remoteState = await loadRemoteState();
     Object.assign(state, normalizeState({ ...remoteState, ...localOnlyState }));
@@ -3256,6 +3534,7 @@ export async function setupDashboard() {
     setupTaskList(state);
     setupDayPlanner(state);
     setupStartConsole(state);
+    setupReminderControls(state);
     setupLifeBalanceForms(state);
     setupQuickLogForm(state);
     setupLearningLogForm(state);

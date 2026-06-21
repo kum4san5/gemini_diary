@@ -227,6 +227,17 @@
                 </details>
             </section>
 
+            <section class="panel category-panel" aria-labelledby="category-heading" data-view-panel="today">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Categories</p>
+                        <h2 id="category-heading">カテゴリ別の今日</h2>
+                    </div>
+                    <span class="status-pill">Todo + Log</span>
+                </div>
+                <div id="category-summary" class="category-summary" aria-live="polite"></div>
+            </section>
+
             <section class="panel ai-panel" aria-labelledby="ai-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>
@@ -246,6 +257,25 @@
                 </div>
                 <p id="next-action-copy" class="ai-summary">未完了Todoから、今動かす候補を表示します。</p>
                 <div id="start-console" class="start-console" aria-live="polite"></div>
+                <div id="reminder-panel" class="reminder-strip" aria-live="polite">
+                    <div class="reminder-copy">
+                        <span class="metric-label">Reminder</span>
+                        <p id="reminder-status">通知を許可すると、開いている間だけ小さく戻ってこられます。</p>
+                    </div>
+                    <div class="reminder-controls">
+                        <label>
+                            間隔
+                            <select id="reminder-interval">
+                                <option value="30">30分</option>
+                                <option value="60">1時間</option>
+                                <option value="120">2時間</option>
+                            </select>
+                        </label>
+                        <button class="secondary-btn" type="button" data-reminder-enable>通知を許可</button>
+                        <button class="secondary-btn" type="button" data-reminder-snooze="15">15分後</button>
+                        <button class="secondary-btn" type="button" data-reminder-test>テスト</button>
+                    </div>
+                </div>
             </section>
 
             <section class="panel day-plan-panel" aria-labelledby="day-plan-heading" data-view-panel="today">

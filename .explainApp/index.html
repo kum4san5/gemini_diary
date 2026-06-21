@@ -12,7 +12,7 @@
         <div>
             <p class="eyebrow">Life Dashboard Guide</p>
             <h1>3分で人生の軌道に戻るホーム画面</h1>
-            <p class="lead">Start Console、Life Balance、Knowledge、Logs、Notion連携の役割を、図とユースケースで確認できます。</p>
+            <p class="lead">Start Console、Reminder、カテゴリ別の今日、Life Balance、Knowledge、Logs、Notion連携の役割を、図とユースケースで確認できます。</p>
         </div>
         <nav class="top-nav" aria-label="説明書ナビゲーション">
             <a href="#overview">全体像</a>
@@ -28,7 +28,7 @@
             <article class="hero-copy">
                 <p class="eyebrow">Purpose</p>
                 <h2>管理するためではなく、始めるためのアプリ</h2>
-                <p>このアプリの中心は、完璧な記録ではありません。今日の一手を選び、Resourceを開き、5分だけ始め、終わったらLearning Logに残すことです。</p>
+                <p>このアプリの中心は、完璧な記録ではありません。今日の一手を選び、Resourceを開き、5分だけ始め、必要ならReminderで戻り、終わったらLearning Logに残すことです。</p>
                 <div class="quick-links" aria-label="Markdown説明書">
                     <a href="README.md">README</a>
                     <a href="use-cases.md">Use Cases</a>
@@ -42,11 +42,13 @@
                 <pre class="mermaid">
 flowchart TD
     A[アプリを開く] --> B[Start Console]
+    A --> R[Reminder]
     B --> C[今日の一手]
     C --> D[Resourceを開く]
     D --> E[5分だけ始める]
     E --> F[Learning Log]
     F --> G[今日も再起動できた]
+    R --> B
                 </pre>
             </article>
         </section>
@@ -76,7 +78,7 @@ flowchart TD
                 <article>
                     <span>4</span>
                     <h3>残す</h3>
-                    <p>Timer終了後、Learning Logへ自動補完して保存します。</p>
+                    <p>Timer終了後、Learning Logへ自動補完して保存します。脱線しやすい日はReminderをONにします。</p>
                 </article>
             </div>
             <pre class="mermaid wide-diagram">
@@ -100,7 +102,7 @@ sequenceDiagram
                 <h2>画面ごとの役割</h2>
             </div>
             <div class="screen-grid">
-                <article><h3>Today</h3><p>3分再起動。Start Console、Life Balance、Quick Log、時間配分。</p></article>
+                <article><h3>Today</h3><p>3分再起動。Start Console、Reminder、カテゴリ別の今日、Life Balance、Quick Log、時間配分。</p></article>
                 <article><h3>Goals</h3><p>長期目標をTask、Habit、Resourceへ分解する場所。</p></article>
                 <article><h3>Knowledge</h3><p>学びを溜める場所。ActionableならTodo化してTodayへ戻す。</p></article>
                 <article><h3>Logs</h3><p>活動ログ、日次レビュー、英語日記、カレンダー。</p></article>

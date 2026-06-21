@@ -172,6 +172,60 @@
                 </div>
             </section>
 
+            <section class="panel life-balance-panel" aria-labelledby="life-balance-heading" data-view-panel="today">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Life Balance</p>
+                        <h2 id="life-balance-heading">今日の状態</h2>
+                    </div>
+                    <span class="status-pill">6軸 + 月次</span>
+                </div>
+                <div id="life-balance-summary" class="life-balance-summary"></div>
+                <details class="life-input-details">
+                    <summary>今日の状態を更新</summary>
+                    <form id="life-score-form" class="compact-form">
+                        <div class="life-score-inputs">
+                            <label>幸福<input id="life-score-happiness" type="range" min="1" max="5" value="3"></label>
+                            <label>健康<input id="life-score-health" type="range" min="1" max="5" value="3"></label>
+                            <label>成長<input id="life-score-growth" type="range" min="1" max="5" value="3"></label>
+                            <label>お金<input id="life-score-money" type="range" min="1" max="5" value="3"></label>
+                            <label>創作<input id="life-score-creation" type="range" min="1" max="5" value="3"></label>
+                            <label>休息<input id="life-score-rest" type="range" min="1" max="5" value="3"></label>
+                        </div>
+                        <div class="form-row">
+                            <label>気分<select id="mood-log-mood"><option>普通</option><option>低い</option><option>良い</option><option>最高</option></select></label>
+                            <label>エネルギー<select id="mood-log-energy"><option>普通</option><option>低い</option><option>高い</option></select></label>
+                        </div>
+                        <div class="form-row">
+                            <label>ストレス<select id="mood-log-stress"><option>普通</option><option>低い</option><option>高い</option></select></label>
+                            <label>睡眠時間<input id="mood-log-sleep" type="number" min="0" max="24" step="0.5" placeholder="7"></label>
+                        </div>
+                        <label>メモ<input id="life-score-memo" type="text" placeholder="今日の状態を一言だけ"></label>
+                        <button type="submit">状態を保存</button>
+                    </form>
+                </details>
+                <details class="life-input-details">
+                    <summary>月次資産 / 学習テーマ</summary>
+                    <form id="life-assets-form" class="compact-form">
+                        <div class="form-row">
+                            <label>対象月<input id="finance-month" type="month"></label>
+                            <label>自由月数<input id="finance-free-months" type="number" min="0" step="0.5" placeholder="6"></label>
+                        </div>
+                        <div class="form-row">
+                            <label>現金<input id="finance-cash" type="number" min="0" step="1000" placeholder="500000"></label>
+                            <label>投資<input id="finance-investment" type="number" min="0" step="1000" placeholder="300000"></label>
+                        </div>
+                        <div class="form-row">
+                            <label>負債<input id="finance-debt" type="number" min="0" step="1000" placeholder="0"></label>
+                            <label>貯蓄率<input id="finance-saving-rate" type="number" min="0" max="100" step="1" placeholder="20"></label>
+                        </div>
+                        <label>学習テーマ<input id="learning-topic-title" type="text" placeholder="例: 応用情報 ネットワーク"></label>
+                        <label>次のアウトプット<input id="learning-topic-output" type="text" placeholder="例: サブネット計算を10問解いてメモ化"></label>
+                        <button type="submit">月次/学習を保存</button>
+                    </form>
+                </details>
+            </section>
+
             <section class="panel ai-panel" aria-labelledby="ai-heading" data-view-panel="today">
                 <div class="panel-header">
                     <div>

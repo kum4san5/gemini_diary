@@ -51,4 +51,67 @@ describe("dashboard classification helpers", () => {
     expect(dashboardTestHooks.estimateGoalWeeks("2か月でやる")).toBe(8);
     expect(dashboardTestHooks.estimateGoalWeeks("6週間でやる")).toBe(6);
   });
+
+  test("selects next action using due date and action readiness", () => {
+    const today = dashboardTestHooks.todayKey();
+    const action = dashboardTestHooks.selectNextAction({
+      tasks: [
+        { id: "later", title: "余裕があれば読む", priority: "余裕があれば", estimatedMinutes: 90, completed: false },
+        { id: "due", title: "今日中に着手", priority: "なるべく早く", due: today, resourceIds: ["r1"], estimatedMinutes: 15, completed: false },
+      ],
+      notes: [],
+      shortcuts: [],
+      extended: { goals: [], resources: [] },
+    });
+
+    expect(action.type).toBe("task");
+    expect(action.task.id).toBe("due");
+  });
+
+  test("calculates life balance from six axes", () => {
+    const balance = dashboardTestHooks.calculateLifeBalance({
+      lifeScores: [{
+        date: dashboardTestHooks.todayKey(),
+        happiness: 4,
+        health: 3,
+        growth: 5,
+        money: 3,
+        creation: 4,
+        rest: 2,
+      }],
+      moodLogs: [],
+      financeSnapshots: [],
+      learningTopics: [],
+    });
+
+    expect(balance.average).toBe(70);
+    expect(balance.dimensions).toHaveLength(6);
+  });
+
+  test("converts focus session to learning log input", () => {
+    const input = dashboardTestHooks.sessionToLearningLogInput({
+      taskId: "notion-page-id",
+      title: "ネットワーク復習",
+      area: "学習",
+      category: "過去問道場",
+      genre: "ネットワーク",
+      accumulatedSeconds: 300,
+      isRunning: false,
+      projectIds: ["project-1"],
+      goalIds: ["goal-1"],
+      resourceIds: ["resource-1"],
+    }, {
+      isRealPageId: () => true,
+      filterRealIds: (ids) => ids,
+    });
+
+    expect(input.minutes).toBe(5);
+    expect(input.relatedTaskId).toBe("notion-page-id");
+    expect(input.memo).toContain("ネットワーク復習");
+  });
+
+  test("uses Japan time for date keys", () => {
+    expect(dashboardTestHooks.todayKey(new Date("2026-06-20T15:30:00.000Z"))).toBe("2026-06-21");
+    expect(dashboardTestHooks.normalizeDateKey("2026-06-20T15:30:00.000Z")).toBe("2026-06-21");
+  });
 });

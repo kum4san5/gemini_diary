@@ -315,6 +315,10 @@ function getSchemaCheck() {
     { key: "DIARY_DATABASE_ID", name: "Diary Entries", properties: ["Name", "Date", "Type", "Original Text", "Corrected Text", "Feedback"] },
     { key: "RESOURCES_DATABASE_ID", name: "Resources", properties: ["Name", "Type", "URL", "Area", "Category", "Tags", "Memo", "Projects", "Goals"] },
     { key: "DASHBOARD_SETTINGS_DATABASE_ID", name: "Dashboard Settings", properties: ["Name", "Key", "Value", "Type", "Enabled"] },
+    { key: "LIFE_SCORES_DATABASE_ID", name: "Life Scores", properties: ["Name", "Date", "Happiness", "Health", "Growth", "Money", "Creation", "Rest", "Memo"] },
+    { key: "MOOD_LOGS_DATABASE_ID", name: "Mood Logs", properties: ["Name", "Date", "Mood", "Energy", "Stress", "Sleep Hours", "Memo"] },
+    { key: "FINANCE_SNAPSHOTS_DATABASE_ID", name: "Finance Snapshots", properties: ["Name", "Month", "Cash", "Investment", "Debt", "Saving Rate", "Free Months", "Memo"] },
+    { key: "LEARNING_TOPICS_DATABASE_ID", name: "Learning Topics", properties: ["Name", "Area", "Level", "Roadmap Stage", "Next Output", "Status", "Resources", "Goals"] },
   ];
 
   const results = schemas.map(function (schema) {

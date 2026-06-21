@@ -287,6 +287,7 @@
                     <button class="secondary-btn" type="button" id="day-plan-auto">おすすめ選択</button>
                 </div>
                 <form id="day-plan-settings" class="compact-form">
+                    <div id="day-plan-week-tabs" class="day-plan-week-tabs" aria-label="週間の計画日"></div>
                     <div class="form-row">
                         <label>
                             日タイプ
@@ -343,23 +344,23 @@
                     <div id="day-plan-block-list" class="day-plan-block-list"></div>
                 </details>
                 <div class="day-plan-layout">
-                    <div>
+                    <div class="day-plan-task-column">
                         <h3>割り当てるTodo</h3>
                         <div id="day-plan-task-picker" class="day-plan-task-picker"></div>
                     </div>
-                    <div>
+                    <div class="day-plan-chart-column">
                         <div class="time-chart" id="day-plan-chart" aria-label="時間配分"></div>
                         <div id="day-plan-summary" class="day-plan-summary"></div>
+                        <div id="day-plan-timeline" class="day-plan-timeline"></div>
                     </div>
                 </div>
-                <div id="day-plan-timeline" class="day-plan-timeline"></div>
                 <div class="time-scale-charts" aria-label="週次と月次の活動チャート">
                     <section>
-                        <h3>週間チャート</h3>
+                        <h3>週間実績</h3>
                         <div id="week-time-chart" class="period-chart"></div>
                     </section>
                     <section>
-                        <h3>月間チャート</h3>
+                        <h3>月間実績</h3>
                         <div id="month-time-chart" class="period-chart"></div>
                     </section>
                 </div>

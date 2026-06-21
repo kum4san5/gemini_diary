@@ -138,6 +138,43 @@ describe("dashboard classification helpers", () => {
     expect(allocation.taskMinutes).toBe(60);
   });
 
+  test("calculates day plan from the active weekly day", () => {
+    const allocation = dashboardTestHooks.buildDayPlan({
+      dayPlan: {
+        activeDate: "2026-06-23",
+        weekPlans: {
+          "2026-06-22": {
+            type: "weekday",
+            useFixedWork: false,
+            freeStart: "08:00",
+            freeEnd: "22:00",
+            bufferMinutes: 0,
+            selectedTaskIds: ["monday"],
+            taskStarts: {},
+            scheduleBlocks: [],
+          },
+          "2026-06-23": {
+            type: "weekday",
+            useFixedWork: false,
+            freeStart: "08:00",
+            freeEnd: "22:00",
+            bufferMinutes: 0,
+            selectedTaskIds: ["tuesday"],
+            taskStarts: {},
+            scheduleBlocks: [{ id: "play", type: "play", title: "遊び", start: "19:00", end: "21:00" }],
+          },
+        },
+      },
+      tasks: [
+        { id: "monday", title: "月曜Todo", completed: false, estimatedMinutes: 30 },
+        { id: "tuesday", title: "火曜Todo", completed: false, estimatedMinutes: 45 },
+      ],
+    });
+
+    expect(allocation.plannedMinutes).toBe(120);
+    expect(allocation.taskMinutes).toBe(45);
+  });
+
   test("uses Japan time for date keys", () => {
     expect(dashboardTestHooks.todayKey(new Date("2026-06-20T15:30:00.000Z"))).toBe("2026-06-21");
     expect(dashboardTestHooks.normalizeDateKey("2026-06-20T15:30:00.000Z")).toBe("2026-06-21");

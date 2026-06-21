@@ -731,7 +731,7 @@ button:disabled {
 
 .day-plan-layout {
     display: grid;
-    grid-template-columns: minmax(260px, 1fr) minmax(220px, 0.8fr);
+    grid-template-columns: minmax(300px, 0.95fr) minmax(360px, 1.05fr);
     gap: 16px;
     align-items: start;
     margin-top: 16px;
@@ -747,12 +747,88 @@ button:disabled {
     gap: 8px;
 }
 
+.day-plan-week-tabs {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.day-plan-week-tab {
+    display: grid;
+    gap: 2px;
+    min-height: 62px;
+    padding: 7px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--panel-bg) 82%, var(--panel-soft));
+    color: var(--text-color);
+    cursor: pointer;
+    text-align: left;
+}
+
+.day-plan-week-tab span,
+.day-plan-week-tab small {
+    color: var(--muted-color);
+    font-size: 0.68rem;
+    font-weight: 900;
+}
+
+.day-plan-week-tab strong {
+    font-size: 0.84rem;
+    line-height: 1;
+}
+
+.day-plan-week-tab.active {
+    border-color: color-mix(in srgb, var(--primary-color) 72%, var(--border-color));
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 16%, transparent), transparent),
+        color-mix(in srgb, var(--panel-bg) 86%, var(--panel-soft));
+}
+
+.day-plan-task-group {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--panel-bg) 74%, var(--panel-soft));
+    overflow: hidden;
+}
+
+.day-plan-task-group summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    min-height: 40px;
+    padding: 9px 10px;
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.day-plan-task-group summary span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.day-plan-task-group summary small {
+    color: var(--muted-color);
+    font-size: 0.74rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.day-plan-task-group-list {
+    display: grid;
+    gap: 6px;
+    padding: 0 8px 8px;
+}
+
 .day-plan-task {
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 4px 10px;
-    align-items: start;
-    padding: 10px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    align-items: center;
+    padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     background: var(--panel-soft);
@@ -766,18 +842,23 @@ button:disabled {
 }
 
 .day-plan-task span {
+    min-width: 0;
     color: var(--text-color);
     font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .day-plan-task small {
-    grid-column: 2;
     color: var(--muted-color);
+    font-size: 0.74rem;
     font-weight: 800;
+    white-space: nowrap;
 }
 
 .day-plan-placement {
-    grid-column: 2;
+    grid-column: 2 / -1;
     display: grid;
     grid-template-columns: auto minmax(110px, 1fr) 104px 64px;
     gap: 8px;
@@ -826,6 +907,13 @@ button:disabled {
         );
 }
 
+.day-plan-chart-column {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+}
+
 .time-chart strong {
     font-size: 2rem;
     line-height: 1;
@@ -841,6 +929,7 @@ button:disabled {
 .day-plan-summary {
     display: grid;
     gap: 6px;
+    align-content: start;
 }
 
 .day-plan-summary p {
@@ -914,9 +1003,10 @@ button:disabled {
 }
 
 .day-plan-timeline {
+    grid-column: 1 / -1;
     display: grid;
     gap: 10px;
-    margin-top: 16px;
+    margin-top: 0;
 }
 
 .timeline-row {
@@ -2349,6 +2439,25 @@ button,
     .time-scale-charts {
         grid-template-columns: 1fr;
     }
+
+    .day-plan-week-tabs {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+    }
+
+    .day-plan-week-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .day-plan-week-tab {
+        flex: 0 0 112px;
+    }
+
+    .day-plan-chart-column {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 760px) {
@@ -2493,6 +2602,28 @@ button,
 
     .period-row {
         grid-template-columns: 48px minmax(0, 1fr) 54px;
+    }
+
+    .day-plan-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .day-plan-task {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .day-plan-task small {
+        grid-column: 2;
+    }
+
+    .day-plan-placement {
+        grid-column: 1 / -1;
+        grid-template-columns: 1fr;
+    }
+
+    .time-chart {
+        width: 150px;
+        height: 150px;
     }
 }
 
@@ -3047,5 +3178,53 @@ body.dark-mode {
 
     body[data-active-view="today"] .quick-log-panel button[type="submit"] {
         margin-top: auto;
+    }
+}
+
+/* Weekly day planner polish */
+body[data-active-view="today"] .day-plan-layout {
+    grid-template-columns: minmax(300px, 0.95fr) minmax(360px, 1.05fr);
+    align-items: start;
+}
+
+body[data-active-view="today"] .day-plan-chart-column {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+}
+
+body[data-active-view="today"] .day-plan-timeline {
+    grid-column: 1 / -1;
+    margin-top: 0;
+}
+
+body[data-active-view="today"] .day-plan-task-picker {
+    max-height: 430px;
+    overflow: auto;
+    padding-right: 2px;
+}
+
+@media (max-width: 1120px) {
+    body[data-active-view="today"] .day-plan-layout,
+    body[data-active-view="today"] .day-plan-chart-column {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    body[data-active-view="today"] .day-plan-week-tabs {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+
+    body[data-active-view="today"] .day-plan-week-tab {
+        flex: 0 0 104px;
+    }
+
+    body[data-active-view="today"] .day-plan-task-picker {
+        max-height: none;
+        overflow: visible;
     }
 }

@@ -106,6 +106,8 @@ const defaultState = {
         lastNotifiedAt: "",
     },
     dayPlan: {
+        activeDate: "",
+        weekPlans: {},
         type: "weekday",
         useFixedWork: true,
         workStart: "09:00",
@@ -147,10 +149,7 @@ function normalizeState(state) {
     state.learningTopics = Array.isArray(state.learningTopics) ? state.learningTopics : [];
     state.activeSession = normalizeActiveSession(state.activeSession);
     state.reminders = normalizeReminderSettings(state.reminders);
-    state.dayPlan = { ...cloneDefaultState().dayPlan, ...(state.dayPlan || {}) };
-    state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
-    state.dayPlan.useFixedWork = state.dayPlan.useFixedWork !== false;
-    state.dayPlan.scheduleBlocks = normalizeScheduleBlocks(state.dayPlan.scheduleBlocks);
+    state.dayPlan = normalizeDayPlanState(state.dayPlan);
     return state;
 }
 
@@ -191,6 +190,73 @@ function normalizeScheduleBlocks(blocks) {
             end: block.end || "20:00",
         }))
         .filter((block) => timeToMinutes(block.end) > timeToMinutes(block.start));
+}
+
+function normalizeDayPlanState(plan) {
+    const defaults = cloneDefaultState().dayPlan;
+    const base = { ...defaults, ...(plan || {}) };
+    base.activeDate = normalizeDateKey(base.activeDate) || todayKey();
+    base.weekPlans = base.weekPlans && typeof base.weekPlans === "object" ? base.weekPlans : {};
+    base.taskStarts = base.taskStarts || {};
+    base.useFixedWork = base.useFixedWork !== false;
+    base.scheduleBlocks = normalizeScheduleBlocks(base.scheduleBlocks);
+    if (!base.weekPlans[base.activeDate]) {
+        base.weekPlans[base.activeDate] = stripDayPlanFields(base);
+    }
+    Object.keys(base.weekPlans).forEach((date) => {
+        base.weekPlans[date] = normalizeDayPlanFields({ ...base, ...base.weekPlans[date] });
+    });
+    return base;
+}
+
+function normalizeDayPlanFields(plan) {
+    const defaults = cloneDefaultState().dayPlan;
+    return {
+        type: plan.type || defaults.type,
+        useFixedWork: plan.useFixedWork !== false,
+        workStart: plan.workStart || defaults.workStart,
+        workEnd: plan.workEnd || defaults.workEnd,
+        freeStart: plan.freeStart || defaults.freeStart,
+        freeEnd: plan.freeEnd || defaults.freeEnd,
+        bufferMinutes: Number(plan.bufferMinutes ?? defaults.bufferMinutes),
+        selectedTaskIds: Array.isArray(plan.selectedTaskIds) ? plan.selectedTaskIds : [],
+        taskStarts: plan.taskStarts || {},
+        scheduleBlocks: normalizeScheduleBlocks(plan.scheduleBlocks),
+    };
+}
+
+function stripDayPlanFields(plan) {
+    return normalizeDayPlanFields(plan);
+}
+
+function currentDayPlan(state, date = state.dayPlan?.activeDate || todayKey()) {
+    const dayPlan = state.dayPlan || cloneDefaultState().dayPlan;
+    const stored = dayPlan.weekPlans?.[date];
+    if (!stored && date !== (dayPlan.activeDate || todayKey())) {
+        return {
+            ...normalizeDayPlanFields({
+                ...dayPlan,
+                type: isWeekendDateKey(date) ? "weekend" : "weekday",
+                selectedTaskIds: [],
+                taskStarts: {},
+                scheduleBlocks: [],
+            }),
+            activeDate: date,
+        };
+    }
+    return {
+        ...normalizeDayPlanFields({ ...dayPlan, ...(stored || {}) }),
+        activeDate: date,
+    };
+}
+
+function updateCurrentDayPlan(state, patch) {
+    const date = state.dayPlan.activeDate || todayKey();
+    const current = currentDayPlan(state, date);
+    const next = normalizeDayPlanFields({ ...current, ...patch });
+    state.dayPlan.weekPlans = state.dayPlan.weekPlans || {};
+    state.dayPlan.weekPlans[date] = next;
+    Object.assign(state.dayPlan, next, { activeDate: date });
 }
 
 function saveLocalState(state) {
@@ -647,7 +713,7 @@ function scheduleBlockTimelineType(type) {
 }
 
 function buildDayPlan(state) {
-    const plan = state.dayPlan || cloneDefaultState().dayPlan;
+    const plan = currentDayPlan(state);
     const blocks = dayPlanBlocks(plan);
     const selectedTasks = (state.tasks || [])
         .filter((task) => !task.completed && (plan.selectedTaskIds || []).includes(task.id));
@@ -713,6 +779,61 @@ function buildDayPlan(state) {
     return { blocks, selectedTasks, scheduled, freeMinutes, workMinutes, plannedMinutes, taskMinutes, remainingFreeMinutes, overflowMinutes, conflictMinutes, totalDayMinutes };
 }
 
+function weekDateKeys(baseKey = todayKey()) {
+    const base = new Date(`${baseKey}T00:00:00`);
+    const mondayOffset = (base.getDay() + 6) % 7;
+    base.setDate(base.getDate() - mondayOffset);
+    return Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(base);
+        date.setDate(base.getDate() + index);
+        return todayKey(date);
+    });
+}
+
+function weekDayLabel(dateKey) {
+    const labels = ["日", "月", "火", "水", "木", "金", "土"];
+    const date = new Date(`${dateKey}T00:00:00`);
+    return labels[date.getDay()] || "";
+}
+
+function isWeekendDateKey(dateKey) {
+    const date = new Date(`${dateKey}T00:00:00`);
+    return [0, 6].includes(date.getDay());
+}
+
+function defaultPlanForDate(state, dateKey) {
+    return normalizeDayPlanFields({
+        ...state.dayPlan,
+        type: isWeekendDateKey(dateKey) ? "weekend" : "weekday",
+        selectedTaskIds: [],
+        taskStarts: {},
+        scheduleBlocks: [],
+    });
+}
+
+function renderWeekPlanTabs(state) {
+    const target = document.getElementById("day-plan-week-tabs");
+    if (!target) return;
+    const activeDate = state.dayPlan.activeDate || todayKey();
+    const dates = weekDateKeys(activeDate);
+    target.innerHTML = dates.map((date) => {
+        const plan = currentDayPlan(state, date);
+        const taskMinutes = (state.tasks || [])
+            .filter((task) => !task.completed && (plan.selectedTaskIds || []).includes(task.id))
+            .reduce((sum, task) => sum + Math.max(5, Number(task.estimatedMinutes || task.actualMinutes || 30)), 0);
+        const busyMinutes = dayPlanBusyBlocks(plan).reduce((sum, block) => sum + Math.max(0, block.end - block.start), 0);
+        const isToday = date === todayKey();
+        const isActive = date === activeDate;
+        return `
+            <button class="day-plan-week-tab ${isActive ? "active" : ""}" type="button" data-day-plan-date="${date}" aria-pressed="${isActive}">
+                <span>${weekDayLabel(date)}</span>
+                <strong>${date.slice(5)}</strong>
+                <small>${formatDuration(taskMinutes)}${busyMinutes ? ` / 予定${formatDuration(busyMinutes)}` : ""}${isToday ? " / 今日" : ""}</small>
+            </button>
+        `;
+    }).join("");
+}
+
 function overlapsAny(range, ranges) {
     return ranges.some((item) => range.start < item.end && range.end > item.start);
 }
@@ -752,7 +873,8 @@ function renderDayPlanner(state) {
     const chart = document.getElementById("day-plan-chart");
     if (!form || !picker || !summary || !timeline || !chart) return;
 
-    const plan = state.dayPlan;
+    renderWeekPlanTabs(state);
+    const plan = currentDayPlan(state);
     document.getElementById("day-plan-type").value = plan.type;
     document.getElementById("day-plan-buffer").value = plan.bufferMinutes;
     document.getElementById("day-plan-use-fixed-work").checked = plan.useFixedWork !== false;
@@ -762,29 +884,11 @@ function renderDayPlanner(state) {
     document.getElementById("day-plan-free-end").value = plan.freeEnd;
     renderScheduleBlocks(plan);
 
-    const candidateTasks = (state.tasks || []).filter((task) => !task.completed).slice(0, 12);
+    const candidateTasks = (state.tasks || []).filter((task) => !task.completed).slice(0, 24);
     const dayStart = timeToMinutes(plan.freeStart);
     const dayEnd = timeToMinutes(plan.freeEnd);
     picker.innerHTML = candidateTasks.length
-        ? candidateTasks.map((task) => {
-            const duration = Math.max(5, Number(task.estimatedMinutes || task.actualMinutes || 30));
-            const latestStart = Math.max(dayStart, dayEnd - duration);
-            return `
-            <label class="day-plan-task">
-                <input type="checkbox" data-day-plan-task="${task.id}" ${(plan.selectedTaskIds || []).includes(task.id) ? "checked" : ""}>
-                <span>${escapeHtml(task.title || "Untitled Todo")}</span>
-                <small>${escapeHtml(task.priority || "未設定")} / ${formatDuration(Number(task.estimatedMinutes || 30))}</small>
-                ${(plan.selectedTaskIds || []).includes(task.id) ? `
-                    <div class="day-plan-placement">
-                        <span>開始</span>
-                        <input type="range" data-day-plan-start-range="${task.id}" min="${dayStart}" max="${latestStart}" step="5" value="${timeToMinutes(plan.taskStarts?.[task.id] || plan.freeStart)}">
-                        <input type="time" data-day-plan-start-time="${task.id}" value="${escapeHtml(plan.taskStarts?.[task.id] || "")}">
-                        <button class="item-action" type="button" data-day-plan-auto-task="${task.id}">自動</button>
-                    </div>
-                ` : ""}
-            </label>
-        `;
-        }).join("")
+        ? renderDayPlanTaskGroups(state, candidateTasks, plan, dayStart, dayEnd)
         : `<p class="placeholder">未完了Todoがありません。</p>`;
 
     const allocation = buildDayPlan(state);
@@ -813,6 +917,65 @@ function renderDayPlanner(state) {
         ? [...busyRows, ...taskRows].sort((a, b) => Number(a.datasetStart) - Number(b.datasetStart)).map((row) => row.html).join("")
         : `<p class="placeholder">予定かTodoを選ぶとタイムチャートを表示します。</p>`;
     renderPeriodCharts(state);
+}
+
+function renderDayPlanTaskGroups(state, tasks, plan, dayStart, dayEnd) {
+    const groups = new Map();
+    tasks.forEach((task) => {
+        const label = taskParentLabel(state, task);
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label).push(task);
+    });
+
+    return Array.from(groups.entries()).map(([label, groupTasks], index) => {
+        const selectedCount = groupTasks.filter((task) => (plan.selectedTaskIds || []).includes(task.id)).length;
+        const totalMinutes = groupTasks.reduce((sum, task) => sum + Math.max(5, Number(task.estimatedMinutes || task.actualMinutes || 30)), 0);
+        const open = selectedCount || index === 0;
+        return `
+            <details class="day-plan-task-group" ${open ? "open" : ""}>
+                <summary>
+                    <span>${escapeHtml(label)}</span>
+                    <small>${groupTasks.length}件 / ${formatDuration(totalMinutes)}${selectedCount ? ` / 選択${selectedCount}` : ""}</small>
+                </summary>
+                <div class="day-plan-task-group-list">
+                    ${groupTasks.map((task) => renderDayPlanTaskRow(task, plan, dayStart, dayEnd)).join("")}
+                </div>
+            </details>
+        `;
+    }).join("");
+}
+
+function renderDayPlanTaskRow(task, plan, dayStart, dayEnd) {
+    const duration = Math.max(5, Number(task.estimatedMinutes || task.actualMinutes || 30));
+    const latestStart = Math.max(dayStart, dayEnd - duration);
+    const selected = (plan.selectedTaskIds || []).includes(task.id);
+    return `
+        <label class="day-plan-task">
+            <input type="checkbox" data-day-plan-task="${escapeHtml(task.id)}" ${selected ? "checked" : ""}>
+            <span>${escapeHtml(task.title || "Untitled Todo")}</span>
+            <small>${escapeHtml(task.priority || "未設定")} / ${formatDuration(duration)}</small>
+            ${selected ? `
+                <div class="day-plan-placement">
+                    <span>開始</span>
+                    <input type="range" data-day-plan-start-range="${escapeHtml(task.id)}" min="${dayStart}" max="${latestStart}" step="5" value="${timeToMinutes(plan.taskStarts?.[task.id] || plan.freeStart)}">
+                    <input type="time" data-day-plan-start-time="${escapeHtml(task.id)}" value="${escapeHtml(plan.taskStarts?.[task.id] || "")}">
+                    <button class="item-action" type="button" data-day-plan-auto-task="${escapeHtml(task.id)}">自動</button>
+                </div>
+            ` : ""}
+        </label>
+    `;
+}
+
+function taskParentLabel(state, task) {
+    const goal = (task.goalIds || [])
+        .map((id) => (state.extended?.goals || []).find((item) => item.id === id))
+        .find(Boolean);
+    if (goal) return `Goal: ${goal.title || "Untitled"}`;
+    const project = (task.projectIds || [])
+        .map((id) => (state.extended?.projects || []).find((item) => item.id === id))
+        .find(Boolean);
+    if (project) return `Project: ${project.title || "Untitled"}`;
+    return task.area || task.category || "未分類";
 }
 
 function timelineRow(title, start, end, type, dayStart, widthBase, manual = false) {
@@ -851,8 +1014,8 @@ function renderPeriodCharts(state) {
     const weekTarget = document.getElementById("week-time-chart");
     const monthTarget = document.getElementById("month-time-chart");
     if (!weekTarget || !monthTarget) return;
-    weekTarget.innerHTML = renderPeriodBarList(buildWeekActivity(state), "今週の活動ログはまだありません。");
-    monthTarget.innerHTML = renderPeriodBarList(buildMonthActivityByArea(state), "今月の活動ログはまだありません。");
+    weekTarget.innerHTML = renderPeriodBarList(buildWeekActivity(state), "Quick Logや集中セッションを記録すると、直近7日の実績が出ます。");
+    monthTarget.innerHTML = renderPeriodBarList(buildMonthActivityByArea(state), "Quick Logや集中セッションを記録すると、今月の領域別実績が出ます。");
 }
 
 function buildWeekActivity(state) {
@@ -1659,10 +1822,10 @@ function setupDayPlanner(state) {
     const autoButton = document.getElementById("day-plan-auto");
     const blockForm = document.getElementById("day-plan-block-form");
     const blockList = document.getElementById("day-plan-block-list");
+    const weekTabs = document.getElementById("day-plan-week-tabs");
 
     const updateSettings = () => {
-        state.dayPlan = {
-            ...state.dayPlan,
+        updateCurrentDayPlan(state, {
             type: document.getElementById("day-plan-type").value,
             useFixedWork: document.getElementById("day-plan-use-fixed-work").checked,
             bufferMinutes: Number(document.getElementById("day-plan-buffer").value || 0),
@@ -1670,7 +1833,7 @@ function setupDayPlanner(state) {
             workEnd: document.getElementById("day-plan-work-end").value,
             freeStart: document.getElementById("day-plan-free-start").value,
             freeEnd: document.getElementById("day-plan-free-end").value,
-        };
+        });
         saveLocalState(state);
         renderDayPlanner(state);
     };
@@ -1679,24 +1842,28 @@ function setupDayPlanner(state) {
     form?.addEventListener("change", updateSettings);
 
     picker?.addEventListener("change", (event) => {
+        const plan = currentDayPlan(state);
         const checkbox = event.target.closest("[data-day-plan-task]");
         const timeInput = event.target.closest("[data-day-plan-start-time]");
         const range = event.target.closest("[data-day-plan-start-range]");
         if (checkbox) {
-            const ids = new Set(state.dayPlan.selectedTaskIds || []);
+            const ids = new Set(plan.selectedTaskIds || []);
+            const taskStarts = { ...(plan.taskStarts || {}) };
             if (checkbox.checked) ids.add(checkbox.dataset.dayPlanTask);
             else {
                 ids.delete(checkbox.dataset.dayPlanTask);
-                delete state.dayPlan.taskStarts?.[checkbox.dataset.dayPlanTask];
+                delete taskStarts[checkbox.dataset.dayPlanTask];
             }
-            state.dayPlan.selectedTaskIds = Array.from(ids);
+            updateCurrentDayPlan(state, { selectedTaskIds: Array.from(ids), taskStarts });
         } else if (timeInput) {
-            state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
-            if (timeInput.value) state.dayPlan.taskStarts[timeInput.dataset.dayPlanStartTime] = timeInput.value;
-            else delete state.dayPlan.taskStarts[timeInput.dataset.dayPlanStartTime];
+            const taskStarts = { ...(plan.taskStarts || {}) };
+            if (timeInput.value) taskStarts[timeInput.dataset.dayPlanStartTime] = timeInput.value;
+            else delete taskStarts[timeInput.dataset.dayPlanStartTime];
+            updateCurrentDayPlan(state, { taskStarts });
         } else if (range) {
-            state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
-            state.dayPlan.taskStarts[range.dataset.dayPlanStartRange] = minutesToTime(Number(range.value));
+            const taskStarts = { ...(plan.taskStarts || {}) };
+            taskStarts[range.dataset.dayPlanStartRange] = minutesToTime(Number(range.value));
+            updateCurrentDayPlan(state, { taskStarts });
         } else {
             return;
         }
@@ -1707,9 +1874,11 @@ function setupDayPlanner(state) {
     picker?.addEventListener("input", (event) => {
         const range = event.target.closest("[data-day-plan-start-range]");
         if (!range) return;
-        state.dayPlan.taskStarts = state.dayPlan.taskStarts || {};
+        const plan = currentDayPlan(state);
+        const taskStarts = { ...(plan.taskStarts || {}) };
         const value = minutesToTime(Number(range.value));
-        state.dayPlan.taskStarts[range.dataset.dayPlanStartRange] = value;
+        taskStarts[range.dataset.dayPlanStartRange] = value;
+        updateCurrentDayPlan(state, { taskStarts });
         const timeInput = picker.querySelector(`[data-day-plan-start-time="${CSS.escape(range.dataset.dayPlanStartRange)}"]`);
         if (timeInput) timeInput.value = value;
         saveLocalState(state);
@@ -1718,13 +1887,16 @@ function setupDayPlanner(state) {
     picker?.addEventListener("click", (event) => {
         const autoTaskButton = event.target.closest("[data-day-plan-auto-task]");
         if (!autoTaskButton) return;
-        delete state.dayPlan.taskStarts?.[autoTaskButton.dataset.dayPlanAutoTask];
+        const plan = currentDayPlan(state);
+        const taskStarts = { ...(plan.taskStarts || {}) };
+        delete taskStarts[autoTaskButton.dataset.dayPlanAutoTask];
+        updateCurrentDayPlan(state, { taskStarts });
         saveLocalState(state);
         renderDayPlanner(state);
     });
 
     autoButton?.addEventListener("click", () => {
-        state.dayPlan.selectedTaskIds = recommendedDayPlanTaskIds(state);
+        updateCurrentDayPlan(state, { selectedTaskIds: recommendedDayPlanTaskIds(state) });
         saveLocalState(state);
         renderDayPlanner(state);
     });
@@ -1739,16 +1911,19 @@ function setupDayPlanner(state) {
             return;
         }
         const title = document.getElementById("day-plan-block-title").value.trim() || scheduleBlockTypeLabel(type);
-        state.dayPlan.scheduleBlocks = normalizeScheduleBlocks([
-            ...(state.dayPlan.scheduleBlocks || []),
-            {
-                id: `schedule-block-${Date.now()}`,
-                type,
-                title,
-                start,
-                end,
-            },
-        ]);
+        const plan = currentDayPlan(state);
+        updateCurrentDayPlan(state, {
+            scheduleBlocks: normalizeScheduleBlocks([
+                ...(plan.scheduleBlocks || []),
+                {
+                    id: `schedule-block-${Date.now()}`,
+                    type,
+                    title,
+                    start,
+                    end,
+                },
+            ]),
+        });
         document.getElementById("day-plan-block-title").value = "";
         saveLocalState(state);
         renderDayPlanner(state);
@@ -1758,8 +1933,22 @@ function setupDayPlanner(state) {
     blockList?.addEventListener("click", (event) => {
         const removeButton = event.target.closest("[data-day-plan-block-remove]");
         if (!removeButton) return;
-        state.dayPlan.scheduleBlocks = (state.dayPlan.scheduleBlocks || [])
-            .filter((block) => block.id !== removeButton.dataset.dayPlanBlockRemove);
+        const plan = currentDayPlan(state);
+        updateCurrentDayPlan(state, {
+            scheduleBlocks: (plan.scheduleBlocks || []).filter((block) => block.id !== removeButton.dataset.dayPlanBlockRemove),
+        });
+        saveLocalState(state);
+        renderDayPlanner(state);
+    });
+
+    weekTabs?.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-day-plan-date]");
+        if (!button) return;
+        state.dayPlan.activeDate = button.dataset.dayPlanDate;
+        if (!state.dayPlan.weekPlans?.[state.dayPlan.activeDate]) {
+            state.dayPlan.weekPlans = state.dayPlan.weekPlans || {};
+            state.dayPlan.weekPlans[state.dayPlan.activeDate] = defaultPlanForDate(state, state.dayPlan.activeDate);
+        }
         saveLocalState(state);
         renderDayPlanner(state);
     });

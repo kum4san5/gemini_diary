@@ -7,8 +7,10 @@ flowchart TD
     Today[Today<br/>3分再起動] --> Goals[Goals<br/>長期目標]
     Today --> Knowledge[Knowledge<br/>学びと実行候補]
     Today --> Logs[Logs<br/>実績と振り返り]
+    Today --> Lab[Learning Lab<br/>Cloud Quest / Sandbox]
     Today --> Projects[Projects<br/>Project / Resource]
     Today --> Settings[Settings<br/>Notion整合性]
+    Lab --> Logs
     Goals --> Today
     Knowledge --> Today
     Projects --> Today
@@ -104,6 +106,28 @@ flowchart LR
 役割:
 - Project、Goal、Resourceをまとめる作戦部屋
 - 毎日ではなく、週次や設計時に使う
+
+## Learning Lab
+
+役割:
+- Cloud Questでネットワーク、セキュリティ、IAM、DB、障害対応を実践する
+- Sandbox ModeでQuestに縛られずCLI、疑似クラウド、Code Runnerを触る
+- Quest完了やSandbox実践をLearning Logへ保存する
+
+PC:
+
+```text
+[Quest一覧 / Filter] [Terminal / Cloud Console / Code Runner] [Quest Brief / 保存]
+```
+
+スマホ:
+
+```text
+[Mode / Filter]
+[Quest一覧]
+[Terminal]
+[Quest Brief / Sandbox Memo]
+```
 
 ## Settings
 

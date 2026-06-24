@@ -19,6 +19,7 @@
         <nav class="top-nav" aria-label="説明書ナビゲーション">
             <a href="#overview">全体像</a>
             <a href="#daily-flow">3分再起動</a>
+            <a href="#lab">Learning Lab</a>
             <a href="#screens">画面</a>
             <a href="#data">データ</a>
             <a href="#operations">運用</a>
@@ -50,6 +51,8 @@ flowchart TD
     D --> E[5分だけ始める]
     E --> F[Learning Log]
     F --> G[今日も再起動できた]
+    B --> L[Learning Lab]
+    L --> F
     R --> B
                 </pre>
             </article>
@@ -98,6 +101,31 @@ sequenceDiagram
             </pre>
         </section>
 
+        <section id="lab" class="section-band">
+            <div class="section-heading">
+                <p class="eyebrow">Learning Lab</p>
+                <h2>Cloud Questと自由Sandbox</h2>
+                <p>Questは順番固定ではありません。ネットワーク、セキュリティ、IAM、DB、障害対応から、気になる演習を好きなタイミングで選びます。</p>
+            </div>
+            <div class="screen-grid">
+                <article><h3>Quest Mode</h3><p>CLI、Cloud Console、Code Runnerで達成条件を満たし、Learning Logに保存します。</p></article>
+                <article><h3>Sandbox Mode</h3><p>Quest外で自由に疑似クラウドを触り、試行錯誤そのものを学習ログにできます。</p></article>
+                <article><h3>ログ連携</h3><p>保存した実践はメインアプリのLogsと今日の活動に反映されます。</p></article>
+            </div>
+            <pre class="mermaid wide-diagram">
+flowchart LR
+    A[Quest List] --> B[Terminal]
+    A --> C[Cloud Console]
+    A --> D[Code Runner]
+    B --> E{条件達成}
+    C --> E
+    D --> E
+    E --> F[Learning Log]
+    S[Sandbox] --> B
+    S --> F
+            </pre>
+        </section>
+
         <section id="screens" class="section-band">
             <div class="section-heading">
                 <p class="eyebrow">Screens</p>
@@ -108,6 +136,7 @@ sequenceDiagram
                 <article><h3>Goals</h3><p>長期目標をTask、Habit、Resourceへ分解する場所。</p></article>
                 <article><h3>Knowledge</h3><p>学びを溜める場所。ActionableならTodo化してTodayへ戻す。</p></article>
                 <article><h3>Logs</h3><p>活動ログ、日次レビュー、英語日記、カレンダー。</p></article>
+                <article><h3>Learning Lab</h3><p>Cloud QuestとSandboxで実践し、Learning Logへ保存する。</p></article>
                 <article><h3>Projects</h3><p>Project、Goal、Resourceの作戦部屋。</p></article>
                 <article><h3>Settings</h3><p>Notion整合性、再読み込み、ローカルキャッシュ管理。</p></article>
             </div>
@@ -116,6 +145,8 @@ flowchart TD
     Today[Today: 3分再起動] --> Goals[Goals: 長期目標]
     Today --> Knowledge[Knowledge: 学び]
     Today --> Logs[Logs: 実績]
+    Today --> Lab[Learning Lab: 実践]
+    Lab --> Logs
     Today --> Projects[Projects: Resource]
     Today --> Settings[Settings: Notion整合性]
     Goals --> Today

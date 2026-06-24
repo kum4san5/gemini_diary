@@ -12,6 +12,8 @@ erDiagram
     Project ||--o{ Resource : uses
     Task ||--o{ FocusSession : starts
     FocusSession ||--|| LearningLog : converts_to
+    CloudQuest ||--o{ LearningLog : records
+    SandboxPractice ||--o{ LearningLog : records
     KnowledgeNote ||--o{ Task : becomes
     Resource ||--o{ Task : supports
     LifeScore ||--o{ Reflection : informs
@@ -78,6 +80,37 @@ Timer中だけlocalStorageに保持する一時データ。
 - `projectIds`
 - `goalIds`
 - `resourceIds`
+
+### CloudQuest
+
+疑似クラウド演習の1問。順番固定ではなく、好きな時に選べる。
+
+主なフィールド:
+- `id`
+- `title`
+- `domain`
+- `difficulty`
+- `estimatedMinutes`
+- `scenario`
+- `initialCloudState`
+- `successConditions`
+- `conceptTitle`
+- `conceptSummary`
+- `apKeywords`
+- `checkQuestion`
+- `expectedAnswer`
+
+### SandboxPractice
+
+Questに縛られない自由実践。localStorageの専用状態で管理し、必要な時だけLearningLogへ変換する。
+
+主なフィールド:
+- `startedAt`
+- `cloudState`
+- `history`
+- `codeSource`
+- `genre`
+- `memo`
 
 ### Goal
 

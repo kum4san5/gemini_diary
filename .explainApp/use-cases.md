@@ -56,7 +56,32 @@ flowchart LR
 - TaskにResourceを紐づけるとStart Consoleに出る
 - 完了できなくても「着手した」ことが実績になる
 
-## 4. SNSやゲームに流れそうな時の復帰
+## 4. Cloud Questで学習する
+
+例: 認証エラー、DB権限、疑似障害対応を実践したい。
+
+1. ヘッダーのLearning Labを開く。
+2. Quest一覧から好きなQuestを選ぶ。ロックはないので、気になるものから始める。
+3. Terminalで `help` を実行し、CLIコマンドを確認する。
+4. Cloud ConsoleでAPI、Function、DB、IAM、Logsの状態を見る。
+5. 達成条件を満たしたらLearning Logへ保存する。
+
+```mermaid
+flowchart LR
+    A[Learning Lab] --> B[Questを選ぶ]
+    B --> C[Terminal / Cloud Console / Code Runner]
+    C --> D{達成条件OK?}
+    D -->|Yes| E[Learning Logへ保存]
+    D -->|No| C
+    E --> F[TodayやLogsに反映]
+```
+
+Sandbox Mode:
+- Questとは別の自由実践環境
+- 失敗や寄り道も学習ログにできる
+- CLI、疑似クラウド、JS handlerを好きに触れる
+
+## 5. SNSやゲームに流れそうな時の復帰
 
 1. Todayを開く。
 2. Reminderで「15分後」を押す。
@@ -79,7 +104,7 @@ flowchart LR
     C --> B
 ```
 
-## 5. 夜の振り返り
+## 6. 夜の振り返り
 
 1. Logsタブを開く。
 2. 日次レビューに気分、エネルギー、よかったこと、明日の一手を入れる。
@@ -93,7 +118,7 @@ flowchart TD
     D --> E[翌日のStart Console]
 ```
 
-## 6. 予定が多い日の時間設計
+## 7. 予定が多い日の時間設計
 
 1. TodayのDay Plannerを開く。
 2. 固定勤務がない日は「固定勤務を使う」を外す。
@@ -110,7 +135,7 @@ flowchart LR
     E --> F[記録後に週/月実績]
 ```
 
-## 7. 週次レビュー
+## 8. 週次レビュー
 
 週次では、細かい入力を増やさず、以下だけ見る。
 
@@ -119,7 +144,7 @@ flowchart LR
 - 次の週に減らすもの
 - 次の週に1つ増やすもの
 
-## 8. 資産形成の月次確認
+## 9. 資産形成の月次確認
 
 目的は家計簿ではなく、人生の選択肢が増えている感覚を得ること。
 

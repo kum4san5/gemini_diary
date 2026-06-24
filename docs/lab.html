@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learning Lab | Life Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components/dark-mode-toggle.css">
+</head>
+<body>
+    <button class="dark-mode-toggle" id="darkModeToggle" type="button" aria-label="ダークモード切り替え">Dark</button>
+
+    <main class="app-shell lab-shell">
+        <header class="dashboard-header lab-header">
+            <div>
+                <p class="eyebrow">Learning Lab</p>
+                <h1>Cloud Quest</h1>
+                <p class="header-copy">疑似クラウド、CLI、Code Runnerで、好きなQuestから実践できる学習環境。</p>
+            </div>
+            <div class="header-actions" aria-label="ページ移動">
+                <a class="action-link" href="index.html">アプリに戻る</a>
+                <a class="action-link" href="explain.html">説明</a>
+            </div>
+        </header>
+
+        <section class="lab-topbar" aria-label="Learning Lab 操作">
+            <div class="segmented-controls" aria-label="モード切り替え">
+                <button class="active" type="button" data-lab-mode="quest">Quest</button>
+                <button type="button" data-lab-mode="sandbox">Sandbox</button>
+            </div>
+            <span class="status-pill" id="lab-mode-label">Quest Mode</span>
+            <label>
+                分野
+                <select id="lab-domain-filter">
+                    <option value="all">すべて</option>
+                    <option value="ネットワーク">ネットワーク</option>
+                    <option value="セキュリティ">セキュリティ</option>
+                    <option value="API">API</option>
+                    <option value="DB">DB</option>
+                    <option value="IAM">IAM</option>
+                    <option value="障害対応">障害対応</option>
+                </select>
+            </label>
+            <label>
+                難易度
+                <select id="lab-difficulty-filter">
+                    <option value="all">すべて</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                </select>
+            </label>
+            <label>
+                状態
+                <select id="lab-status-filter">
+                    <option value="all">すべて</option>
+                    <option value="open">未完了</option>
+                    <option value="completed">完了</option>
+                </select>
+            </label>
+        </section>
+
+        <section class="lab-layout">
+            <aside class="panel lab-quest-panel" aria-labelledby="lab-quest-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Quest List</p>
+                        <h2 id="lab-quest-heading">好きなQuestを選ぶ</h2>
+                    </div>
+                    <span class="status-pill">ロックなし</span>
+                </div>
+                <p class="ai-summary">おすすめ順に並べていますが、どこから始めても大丈夫です。</p>
+                <div id="lab-quest-list" class="lab-quest-list"></div>
+            </aside>
+
+            <section class="panel lab-workspace" aria-labelledby="lab-workspace-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Practice</p>
+                        <h2 id="lab-workspace-heading">実践エリア</h2>
+                    </div>
+                    <button class="secondary-btn" type="button" data-lab-reset>環境リセット</button>
+                </div>
+
+                <div class="lab-tool-tabs" role="tablist" aria-label="実践ツール">
+                    <button class="active" type="button" data-lab-tool="terminal">Terminal</button>
+                    <button type="button" data-lab-tool="cloud">Cloud Console</button>
+                    <button type="button" data-lab-tool="code">Code Runner</button>
+                </div>
+
+                <section class="lab-tool-panel" data-lab-tool-panel="terminal" aria-label="Terminal">
+                    <div class="lab-terminal-output" id="lab-terminal-output" aria-live="polite"></div>
+                    <form class="lab-terminal-form" id="lab-terminal-form">
+                        <span>$</span>
+                        <input id="lab-terminal-input" type="text" autocomplete="off" spellcheck="false" placeholder="help">
+                        <button type="submit">実行</button>
+                    </form>
+                </section>
+
+                <section class="lab-tool-panel" data-lab-tool-panel="cloud" aria-label="Cloud Console" hidden>
+                    <div class="lab-cloud-grid" id="lab-cloud-console"></div>
+                </section>
+
+                <section class="lab-tool-panel" data-lab-tool-panel="code" aria-label="Code Runner" hidden>
+                    <div class="lab-code-layout">
+                        <label>
+                            handler(event)
+                            <textarea id="lab-code-source" spellcheck="false"></textarea>
+                        </label>
+                        <div class="lab-code-actions">
+                            <button type="button" data-code-run>テスト実行</button>
+                        </div>
+                        <div id="lab-code-result" class="lab-code-result"></div>
+                    </div>
+                </section>
+            </section>
+
+            <aside class="panel lab-side-panel" id="lab-side-panel" aria-live="polite"></aside>
+        </section>
+    </main>
+
+    <div id="lab-toast" class="lab-toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="js/lab.js"></script>
+</body>
+</html>

@@ -154,6 +154,7 @@
                     <a class="guide-link" href="#screens">Screens</a>
                     <a class="guide-link" href="#data">Data</a>
                     <a class="guide-link" href="#operations">Ops</a>
+                    <a class="guide-link" href="lab.html">Lab</a>
                     <a class="guide-link" href="index.html">App</a>
                 </div>
             </article>
@@ -167,6 +168,8 @@ flowchart TD
     D --> E[5分だけ始める]
     E --> F[Learning Log]
     F --> G[今日も再起動できた]
+    B --> L[Learning Lab]
+    L --> F
     R --> B
                 </pre>
             </article>
@@ -192,6 +195,7 @@ flowchart TD
                 <article class="guide-card"><h3>Knowledge</h3><p>学びを残し、ActionableならTodo化。</p></article>
                 <article class="guide-card"><h3>Logs</h3><p>活動ログ、日次レビュー、英語日記。</p></article>
                 <article class="guide-card"><h3>Projects</h3><p>Project、Goal、Resourceの作戦部屋。</p></article>
+                <article class="guide-card"><h3>Learning Lab</h3><p>Cloud QuestとSandboxで、疑似クラウド、CLI、Code Runnerを実践する。</p></article>
                 <article class="guide-card"><h3>Settings</h3><p>Notion整合性とデータ管理。</p></article>
             </div>
         </section>
@@ -209,6 +213,8 @@ erDiagram
     FocusSession ||--|| LearningLog : converts_to
     KnowledgeNote ||--o{ Task : becomes
     Resource ||--o{ Task : supports
+    CloudQuest ||--o{ LearningLog : records
+    SandboxPractice ||--o{ LearningLog : records
     LifeScore ||--o{ Reflection : informs
     MoodLog ||--o{ Reflection : informs
     FinanceSnapshot ||--o{ Goal : expands_options

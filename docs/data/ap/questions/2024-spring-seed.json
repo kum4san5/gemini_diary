@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ap-2024-spring-a-001-seed",
+    "source": "seed",
+    "exam": "AP",
+    "year": 2024,
+    "season": "春期",
+    "periodLabel": "2024 春期",
+    "section": "科目A",
+    "number": 1,
+    "domain": "テクノロジ",
+    "category": "データベース",
+    "keywords": ["正規化", "関数従属性", "冗長性"],
+    "body": "関係データベースの正規化を行う主な目的として、最も適切なものはどれか。",
+    "choices": [
+      { "key": "ア", "text": "表の件数を必ず減らすこと" },
+      { "key": "イ", "text": "データの冗長性や更新時の不整合を減らすこと" },
+      { "key": "ウ", "text": "すべての列を文字列型に統一すること" },
+      { "key": "エ", "text": "検索処理を常に高速化すること" }
+    ],
+    "answer": ["イ"],
+    "explanation": "正規化は、関数従属性などに基づいて表を整理し、冗長性や更新時異状を減らすために行います。",
+    "imageRefs": [],
+    "sourceUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+    "sourceLabel": "Seed sample / IPA公式形式の練習用"
+  },
+  {
+    "id": "ap-2024-spring-a-002-seed",
+    "source": "seed",
+    "exam": "AP",
+    "year": 2024,
+    "season": "春期",
+    "periodLabel": "2024 春期",
+    "section": "科目A",
+    "number": 2,
+    "domain": "ストラテジ",
+    "category": "システム戦略",
+    "keywords": ["SLA", "サービスレベル", "可用性"],
+    "body": "サービス提供者と利用者の間で、稼働率や応答時間などのサービス水準を合意する文書はどれか。",
+    "choices": [
+      { "key": "ア", "text": "BCP" },
+      { "key": "イ", "text": "SLA" },
+      { "key": "ウ", "text": "RFP" },
+      { "key": "エ", "text": "WBS" }
+    ],
+    "answer": ["イ"],
+    "explanation": "SLAはService Level Agreementの略で、サービス水準に関する合意を定めます。",
+    "imageRefs": [],
+    "sourceUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+    "sourceLabel": "Seed sample / IPA公式形式の練習用"
+  }
+]

@@ -45,6 +45,7 @@ LEARNING_TOPICS_DATABASE_ID
 
 - activeSession
 - dayPlan
+- AP Practiceの回答、復習キュー、ブックマーク、追加インポート問題
 - LifeScore
 - MoodLog
 - FinanceSnapshot
@@ -54,6 +55,13 @@ LEARNING_TOPICS_DATABASE_ID
 注意:
 - ブラウザのキャッシュ削除で消える可能性があります。
 - 感情ログや資産情報を入れる場合、共有PCでは使わないでください。
+
+## AP Practice問題データ追加
+
+- 公式IPAの過去問題を確認し、JSON/CSV化したものをAP Practiceから追加します。
+- 過去問道場からの直接取得、スクレイピング、問題データ複製は行いません。
+- 年度一覧に「データ未追加」と出る年度は、問題データを追加すると演習可能になります。
+- 図表が必要な問題は `imageRefs` にローカル画像パスを入れます。
 
 ## 同期失敗時
 

@@ -7,9 +7,11 @@ flowchart TD
     Today[Today<br/>3分再起動] --> Goals[Goals<br/>長期目標]
     Today --> Knowledge[Knowledge<br/>学びと実行候補]
     Today --> Logs[Logs<br/>実績と振り返り]
+    Today --> AP[AP Practice<br/>年度別演習]
     Today --> Lab[Learning Lab<br/>Cloud Quest / Sandbox]
     Today --> Projects[Projects<br/>Project / Resource]
     Today --> Settings[Settings<br/>Notion整合性]
+    AP --> Logs
     Lab --> Logs
     Goals --> Today
     Knowledge --> Today
@@ -127,6 +129,29 @@ PC:
 [Quest一覧]
 [Terminal]
 [Quest Brief / Sandbox Memo]
+```
+
+## AP Practice
+
+役割:
+- 応用情報を最新年度、年度別、分野別、弱点復習、模擬セットで解く
+- 2025年度から2009年度までの収録状況を見える化する
+- 未収録年度は公式IPAリンクとJSON/CSV追加導線を出す
+- 解いた結果をLearning Logへ保存する
+
+PC:
+
+```text
+[年度一覧 / インポート] [問題本文 / 選択肢 / 採点] [解説 / 復習メモ / ログ保存]
+```
+
+スマホ:
+
+```text
+[モード / フィルタ]
+[年度一覧]
+[問題]
+[解説 / 復習メモ]
 ```
 
 ## Settings

@@ -43,6 +43,7 @@ npm run explain
 | Goals | 長期目標と今日の一手をつなぐ | 中 |
 | Knowledge | 学びを実行候補へ変える | 中 |
 | Logs | 実績、日次レビュー、英語日記を残す | 中 |
+| AP Practice | 応用情報を年度別・分野別・弱点別に解く | 高 |
 | Learning Lab | Cloud QuestとSandboxで疑似クラウドを実践する | 中 |
 | Projects / Resources | 行動に必要な道具を整理する | 低 |
 | Settings | Notion整合性、データ管理を行う | 低 |
@@ -58,7 +59,9 @@ flowchart TD
     C -->|ない| E[TodoかKnowledge Actionを1つ作る]
     D --> F[5分だけ始める]
     E --> F
+    B --> P[AP Practiceで年度別演習]
     B --> L[Learning LabでQuest/Sandbox]
+    P --> H
     L --> H
     F --> G[Timer終了]
     G --> H[Learning Logへ記録]
@@ -75,9 +78,18 @@ flowchart TD
 5. 終わったら「記録する」を押す。
 6. 脱線しやすい日はReminderをONにして、15分後または1時間後に戻る。
 7. 予定がある日はDay Plannerで曜日を選び、仕事、遊び、移動などを入れてからTodoを割り当てる。
-8. Cloud Questで疑似クラウド、CLI、Code Runnerを触り、完了したらLearning Logへ保存する。
-9. 自由に試したい日はSandbox Modeで失敗も含めて実践ログに残す。
-10. 週間/月間実績は、Quick Logや集中セッションを記録すると表示される。
+8. AP Practiceで最新年度または年度別の応用情報問題を解き、間違いを復習キューに入れる。
+9. Cloud Questで疑似クラウド、CLI、Code Runnerを触り、完了したらLearning Logへ保存する。
+10. 自由に試したい日はSandbox Modeで失敗も含めて実践ログに残す。
+11. 週間/月間実績は、Quick Logや集中セッションを記録すると表示される。
+
+## AP Practiceの問題データ
+
+- 初期表示は問題バンク内の最新年度です。
+- 2025年度から2009年度まで年度一覧を表示します。
+- 未収録年度は隠さず「データ未追加」と表示します。
+- 公式IPA由来のJSON/CSVを追加インポートして問題を増やします。
+- 過去問道場からの直接取得やスクレイピングは行わず、外部Resourceとして開く扱いにします。
 
 ## 設計原則
 

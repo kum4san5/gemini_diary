@@ -154,6 +154,7 @@
                     <a class="guide-link" href="#screens">Screens</a>
                     <a class="guide-link" href="#data">Data</a>
                     <a class="guide-link" href="#operations">Ops</a>
+                    <a class="guide-link" href="ap.html">AP</a>
                     <a class="guide-link" href="lab.html">Lab</a>
                     <a class="guide-link" href="index.html">App</a>
                 </div>
@@ -164,9 +165,11 @@ flowchart TD
     A[アプリを開く] --> B[Start Console]
     A --> R[Reminder]
     B --> C[今日の一手]
+    B --> P[AP Practice]
     C --> D[Resourceを開く]
     D --> E[5分だけ始める]
     E --> F[Learning Log]
+    P --> F
     F --> G[今日も再起動できた]
     B --> L[Learning Lab]
     L --> F
@@ -195,6 +198,7 @@ flowchart TD
                 <article class="guide-card"><h3>Knowledge</h3><p>学びを残し、ActionableならTodo化。</p></article>
                 <article class="guide-card"><h3>Logs</h3><p>活動ログ、日次レビュー、英語日記。</p></article>
                 <article class="guide-card"><h3>Projects</h3><p>Project、Goal、Resourceの作戦部屋。</p></article>
+                <article class="guide-card"><h3>AP Practice</h3><p>応用情報を最新年度、年度別、分野別、弱点復習で解く。</p></article>
                 <article class="guide-card"><h3>Learning Lab</h3><p>Cloud QuestとSandboxで、疑似クラウド、CLI、Code Runnerを実践する。</p></article>
                 <article class="guide-card"><h3>Settings</h3><p>Notion整合性とデータ管理。</p></article>
             </div>
@@ -211,6 +215,8 @@ erDiagram
     Project ||--o{ Goal : contains
     Task ||--o{ FocusSession : starts
     FocusSession ||--|| LearningLog : converts_to
+    APQuestion ||--o{ APPracticeProgress : answered_by
+    APPracticeProgress ||--o{ LearningLog : records
     KnowledgeNote ||--o{ Task : becomes
     Resource ||--o{ Task : supports
     CloudQuest ||--o{ LearningLog : records

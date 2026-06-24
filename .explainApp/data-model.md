@@ -12,6 +12,8 @@ erDiagram
     Project ||--o{ Resource : uses
     Task ||--o{ FocusSession : starts
     FocusSession ||--|| LearningLog : converts_to
+    APQuestion ||--o{ APPracticeProgress : answered_by
+    APPracticeProgress ||--o{ LearningLog : records
     CloudQuest ||--o{ LearningLog : records
     SandboxPractice ||--o{ LearningLog : records
     KnowledgeNote ||--o{ Task : becomes
@@ -99,6 +101,42 @@ Timer中だけlocalStorageに保持する一時データ。
 - `apKeywords`
 - `checkQuestion`
 - `expectedAnswer`
+
+### APQuestion
+
+応用情報の年度別問題。公式IPA由来データをJSON/CSVで追加できる。
+
+主なフィールド:
+- `id`
+- `source`
+- `exam`
+- `year`
+- `season`
+- `periodLabel`
+- `section`
+- `number`
+- `domain`
+- `category`
+- `keywords`
+- `body`
+- `choices`
+- `answer`
+- `explanation`
+- `imageRefs`
+- `subQuestions`
+- `sourceUrl`
+- `sourceLabel`
+
+### APPracticeProgress
+
+応用情報演習の進捗。間違い、ブックマーク、復習メモをlocalStorageに保持する。
+
+主なフィールド:
+- `answered`
+- `bookmarks`
+- `reviewQueue`
+- `notes`
+- `lastPracticedAt`
 
 ### SandboxPractice
 

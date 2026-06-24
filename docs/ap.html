@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AP Practice | Life Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/components/dark-mode-toggle.css">
+</head>
+<body>
+    <button class="dark-mode-toggle" id="darkModeToggle" type="button" aria-label="ダークモード切り替え">Dark</button>
+
+    <main class="app-shell ap-shell">
+        <header class="dashboard-header ap-header">
+            <div>
+                <p class="eyebrow">AP Practice</p>
+                <h1>応用情報 年度別演習</h1>
+                <p class="header-copy">最新年度から年度別・分野別・弱点復習まで、このアプリ内で演習と記録を完結します。</p>
+            </div>
+            <div class="header-actions" aria-label="ページ移動">
+                <a class="action-link" href="index.html">アプリに戻る</a>
+                <a class="action-link" href="lab.html">Learning Lab</a>
+                <a class="action-link" href="https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html">最新年度チェック</a>
+            </div>
+        </header>
+
+        <section class="ap-topbar" aria-label="AP Practice 操作">
+            <div class="segmented-controls ap-mode-controls" aria-label="出題モード">
+                <button class="active" type="button" data-ap-mode="latest">最新年度</button>
+                <button type="button" data-ap-mode="year">年度別</button>
+                <button type="button" data-ap-mode="domain">分野別</button>
+                <button type="button" data-ap-mode="review">弱点復習</button>
+                <button type="button" data-ap-mode="mock">模擬セット</button>
+            </div>
+            <span class="status-pill" id="ap-mode-label">最新年度</span>
+            <label>
+                区分
+                <select id="ap-section-filter">
+                    <option value="all">すべて</option>
+                    <option value="科目A">科目A</option>
+                    <option value="科目B">科目B</option>
+                </select>
+            </label>
+            <label>
+                分野
+                <select id="ap-domain-filter">
+                    <option value="all">すべて</option>
+                </select>
+            </label>
+            <label>
+                状態
+                <select id="ap-attempt-filter">
+                    <option value="all">すべて</option>
+                    <option value="unanswered">未回答</option>
+                    <option value="wrong">間違い</option>
+                    <option value="bookmarked">ブックマーク</option>
+                </select>
+            </label>
+        </section>
+
+        <section class="ap-layout">
+            <aside class="panel ap-period-panel" aria-labelledby="ap-period-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Periods</p>
+                        <h2 id="ap-period-heading">年度一覧</h2>
+                    </div>
+                    <span class="status-pill" id="ap-bank-status">読み込み中</span>
+                </div>
+                <p class="ai-summary">収録済みの年度はそのまま演習できます。未収録は公式ページを確認してJSON/CSVで追加します。</p>
+                <div id="ap-period-list" class="ap-period-list"></div>
+                <details class="ap-import-details">
+                    <summary>問題データを追加</summary>
+                    <label class="ap-file-drop">
+                        JSON / CSV
+                        <input id="ap-import-file" type="file" accept=".json,.csv,text/csv,application/json">
+                    </label>
+                    <div id="ap-import-result" class="ap-import-result"></div>
+                </details>
+            </aside>
+
+            <section class="panel ap-question-panel" aria-labelledby="ap-question-heading">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow" id="ap-question-context">Question</p>
+                        <h2 id="ap-question-heading">問題</h2>
+                    </div>
+                    <div class="ap-question-nav">
+                        <button class="secondary-btn" type="button" data-ap-prev>前へ</button>
+                        <button class="secondary-btn" type="button" data-ap-next>次へ</button>
+                    </div>
+                </div>
+                <div id="ap-question-body" class="ap-question-body"></div>
+            </section>
+
+            <aside class="panel ap-side-panel" id="ap-side-panel" aria-live="polite"></aside>
+        </section>
+    </main>
+
+    <div id="ap-toast" class="lab-toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="js/ap.js"></script>
+</body>
+</html>

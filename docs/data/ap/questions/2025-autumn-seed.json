@@ -1,0 +1,87 @@
+[
+  {
+    "id": "ap-2025-autumn-a-001-seed",
+    "source": "seed",
+    "exam": "AP",
+    "year": 2025,
+    "season": "秋期",
+    "periodLabel": "2025 秋期",
+    "section": "科目A",
+    "number": 1,
+    "domain": "テクノロジ",
+    "category": "ネットワーク",
+    "keywords": ["TCP/IP", "IP", "ネットワーク層"],
+    "body": "TCP/IP階層モデルにおいて、IPアドレスを用いた経路選択を主に担う層はどれか。",
+    "choices": [
+      { "key": "ア", "text": "アプリケーション層" },
+      { "key": "イ", "text": "トランスポート層" },
+      { "key": "ウ", "text": "インターネット層" },
+      { "key": "エ", "text": "ネットワークインタフェース層" }
+    ],
+    "answer": ["ウ"],
+    "explanation": "IPアドレスを使った経路選択は、TCP/IPモデルではインターネット層の役割です。OSI参照モデルではネットワーク層に相当します。",
+    "imageRefs": [],
+    "sourceUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+    "sourceLabel": "Seed sample / IPA公式形式の練習用"
+  },
+  {
+    "id": "ap-2025-autumn-a-002-seed",
+    "source": "seed",
+    "exam": "AP",
+    "year": 2025,
+    "season": "秋期",
+    "periodLabel": "2025 秋期",
+    "section": "科目A",
+    "number": 2,
+    "domain": "テクノロジ",
+    "category": "セキュリティ",
+    "keywords": ["認証", "多要素認証", "知識情報"],
+    "body": "多要素認証の要素のうち、パスワードが該当するものはどれか。",
+    "choices": [
+      { "key": "ア", "text": "所持情報" },
+      { "key": "イ", "text": "知識情報" },
+      { "key": "ウ", "text": "生体情報" },
+      { "key": "エ", "text": "位置情報" }
+    ],
+    "answer": ["イ"],
+    "explanation": "パスワードやPINは本人だけが知っていることを前提にするため、知識情報に分類されます。",
+    "imageRefs": [],
+    "sourceUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+    "sourceLabel": "Seed sample / IPA公式形式の練習用"
+  },
+  {
+    "id": "ap-2025-autumn-b-001-seed",
+    "source": "seed",
+    "exam": "AP",
+    "year": 2025,
+    "season": "秋期",
+    "periodLabel": "2025 秋期",
+    "section": "科目B",
+    "number": 1,
+    "domain": "テクノロジ",
+    "category": "情報セキュリティ",
+    "keywords": ["ログ", "アクセス制御", "インシデント対応"],
+    "body": "あるWebサービスで、深夜帯に管理画面への失敗ログインが急増した。運用担当者はログを確認し、通常と異なる送信元から短時間に複数のIDへ試行が行われていることを確認した。次の設問に答えよ。",
+    "choices": [],
+    "answer": [],
+    "explanation": "科目Bは文脈を読み、原因、影響範囲、対策を整理する演習です。このseedでは自己採点で理解度を残します。",
+    "imageRefs": [],
+    "subQuestions": [
+      {
+        "id": "ap-2025-autumn-b-001-1-seed",
+        "number": "設問1",
+        "prompt": "この状況で最初に疑うべき攻撃として最も適切なものはどれか。",
+        "choices": [
+          { "key": "ア", "text": "ブルートフォース攻撃" },
+          { "key": "イ", "text": "SQLインジェクション" },
+          { "key": "ウ", "text": "クロスサイトスクリプティング" },
+          { "key": "エ", "text": "DNSキャッシュポイズニング" }
+        ],
+        "answer": ["ア"],
+        "explanation": "多数のIDに短時間で失敗ログインが発生しているため、パスワード試行系の攻撃を優先して疑います。"
+      }
+    ],
+    "sourceUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+    "sourceLabel": "Seed sample / IPA公式形式の練習用"
+  }
+]

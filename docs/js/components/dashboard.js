@@ -1205,26 +1205,26 @@ function renderGoalPlanPreview(state) {
         </section>
         <section class="plan-columns">
             ${planEditableColumn("サブタスク", "tasks", plan.tasks, (task, index) => `
-                ${planField("タイトル", `<input data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(task.title)}">`)}
-                <div class="form-row">
+                ${planField("タイトル", `<textarea class="plan-title-input" data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="title">${escapeHtml(task.title)}</textarea>`)}
+                <div class="plan-compact-row">
                     ${planField("優先度", `<select data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="priority">${optionsHtml(["今日中", "なるべく早く", "余裕があれば"], task.priority)}</select>`)}
                     ${planField("見積分", `<input data-plan-edit="tasks" data-plan-index="${index}" data-plan-field="estimatedMinutes" type="number" min="0" step="5" value="${escapeHtml(task.estimatedMinutes)}">`)}
                 </div>
             `)}
             ${planEditableColumn("習慣", "habits", plan.habits, (habit, index) => `
-                ${planField("タイトル", `<input data-plan-edit="habits" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(habit.title)}">`)}
-                <div class="form-row">
+                ${planField("タイトル", `<textarea class="plan-title-input" data-plan-edit="habits" data-plan-index="${index}" data-plan-field="title">${escapeHtml(habit.title)}</textarea>`)}
+                <div class="plan-compact-row">
                     ${planField("頻度", `<select data-plan-edit="habits" data-plan-index="${index}" data-plan-field="frequency">${optionsHtml(["毎日", "毎週", "週2回", "週3回"], habit.frequency)}</select>`)}
                     ${planField("目標分", `<input data-plan-edit="habits" data-plan-index="${index}" data-plan-field="targetMinutes" type="number" min="0" step="5" value="${escapeHtml(habit.targetMinutes)}">`)}
                 </div>
             `)}
             ${planEditableColumn("Resource候補", "resources", plan.resources, (resource, index) => `
-                ${planField("タイトル", `<input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="title" value="${escapeHtml(resource.title)}">`)}
+                ${planField("タイトル", `<textarea class="plan-title-input" data-plan-edit="resources" data-plan-index="${index}" data-plan-field="title">${escapeHtml(resource.title)}</textarea>`)}
                 ${planField("URL", `<input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="url" type="url" placeholder="https://..." value="${escapeHtml(resource.url)}">`)}
                 ${planField("種別", `<select data-plan-edit="resources" data-plan-index="${index}" data-plan-field="type">${optionsHtml(["Webサイト", "Notionページ", "書籍", "動画", "メモ", "ローカル"], resource.type)}</select>`)}
                 ${planField("メモ", `<input data-plan-edit="resources" data-plan-index="${index}" data-plan-field="memo" value="${escapeHtml(resource.memo)}">`)}
             `)}
-            ${planColumn("週次計画", plan.weeklyPlan.map((week) => `Week ${week.week}: ${week.title}`))}
+            ${planColumn("週次計画", plan.weeklyPlan.map((week) => `Week ${week.week}: ${week.title}`), "weeklyPlan")}
         </section>
         <div class="detail-modal-actions">
             <button type="button" data-goal-plan-confirm>この内容で登録</button>
@@ -1235,7 +1235,7 @@ function renderGoalPlanPreview(state) {
 
 function planEditableColumn(title, collection, items, renderItem) {
     return `
-        <div class="plan-column">
+        <div class="plan-column plan-column-${escapeHtml(collection)}">
             <h4>${escapeHtml(title)}</h4>
             ${items.length ? items.map((item, index) => `
                 <div class="plan-edit-item">
@@ -1256,9 +1256,9 @@ function planField(label, controlHtml) {
     `;
 }
 
-function planColumn(title, items) {
+function planColumn(title, items, collection = "static") {
     return `
-        <div class="plan-column">
+        <div class="plan-column plan-column-${escapeHtml(collection)}">
             <h4>${escapeHtml(title)}</h4>
             ${items.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}
         </div>

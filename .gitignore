@@ -10,6 +10,5 @@ creds.json
 
 .clasp.json
 
-/.*
 !/.explainApp/
 !/.explainApp/**

@@ -2,6 +2,21 @@
 
 Life Dashboardは、タスクを管理するためだけの画面ではありません。目的は、疲れている日でも3分で人生の軌道に戻るためのホーム画面を作ることです。
 
+## 最初に結論
+
+このアプリのゴールは、人生を完璧に管理することではありません。
+
+```text
+迷ったらTodayを開く
+→ 次の一手を1つ見る
+→ 5分だけ始める
+→ 一言だけ記録する
+```
+
+これができれば、その日は十分に使えています。すべての入力欄、スコア、画面を毎日更新する必要はありません。
+
+詳しい開始手順は [getting-started.md](getting-started.md) を参照してください。
+
 ## 見やすいHTML版
 
 ブラウザで図つきの説明を見る場合は、リポジトリのルートで以下を実行します。
@@ -82,6 +97,24 @@ flowchart TD
 9. Cloud Questで疑似クラウド、CLI、Code Runnerを触り、完了したらLearning Logへ保存する。
 10. 自由に試したい日はSandbox Modeで失敗も含めて実践ログに残す。
 11. 週間/月間実績は、Quick Logや集中セッションを記録すると表示される。
+
+## 画面を使う頻度
+
+| 頻度 | 画面 | 目的 |
+| --- | --- | --- |
+| 毎日 | Today | 次の一手を選び、始め、記録する |
+| 学習時 | AP Practice / Learning Lab | 問題演習または操作練習をする |
+| 週1回 | Goals / Knowledge / Day Planner | 来週の行動と予定を整える |
+| 月1回 | Life Balance / Finance | 人生の偏りと自由度を確認する |
+| 問題発生時 | Settings | Notion連携や不足Propertyを確認する |
+
+## 説明書の読み方
+
+- まず使いたい: [getting-started.md](getting-started.md)
+- 状況別の流れを知りたい: [use-cases.md](use-cases.md)
+- 画面の役割を知りたい: [screens.md](screens.md)
+- データのつながりを知りたい: [data-model.md](data-model.md)
+- Notion、保存、インポートを確認したい: [operations.md](operations.md)
 
 ## AP Practiceの問題データ
 

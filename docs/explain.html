@@ -32,7 +32,7 @@
 
         .guide-nav,
         .guide-links {
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             margin: 14px 0 0;
         }
 
@@ -95,10 +95,186 @@
             box-shadow: var(--shadow-soft);
         }
 
+        .guide-section > .section-copy {
+            max-width: 820px;
+            margin: 8px 0 16px;
+            color: var(--muted-color);
+            line-height: 1.7;
+        }
+
+        .guide-callout {
+            margin-top: 14px;
+            padding: 14px;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 8px;
+            background: var(--panel-soft);
+        }
+
+        .guide-callout strong,
+        .guide-callout p {
+            display: block;
+            margin-bottom: 0;
+        }
+
+        .guide-callout p {
+            margin-top: 5px;
+            color: var(--muted-color);
+            line-height: 1.6;
+        }
+
+        .guide-principles,
+        .guide-rhythm,
+        .guide-usecases,
+        .guide-do-dont {
+            display: grid;
+            gap: 10px;
+        }
+
+        .guide-principles {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin-top: 14px;
+        }
+
+        .guide-principles article,
+        .guide-rhythm article,
+        .guide-usecases article,
+        .guide-do-dont article {
+            min-width: 0;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--panel-bg) 90%, var(--panel-soft));
+        }
+
+        .guide-principles h3,
+        .guide-rhythm h3,
+        .guide-usecases h3,
+        .guide-do-dont h3 {
+            margin-bottom: 7px;
+            font-size: 0.98rem;
+        }
+
+        .guide-principles p,
+        .guide-rhythm p,
+        .guide-usecases p,
+        .guide-do-dont p {
+            margin-bottom: 0;
+            color: var(--muted-color);
+            line-height: 1.6;
+        }
+
+        .guide-rhythm,
+        .guide-usecases {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .guide-do-dont {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: 12px;
+        }
+
+        .guide-checklist {
+            display: grid;
+            gap: 8px;
+            margin: 14px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .guide-checklist li {
+            display: grid;
+            grid-template-columns: 26px minmax(0, 1fr);
+            gap: 9px;
+            align-items: start;
+            line-height: 1.55;
+        }
+
+        .guide-checklist li::before {
+            content: "✓";
+            display: grid;
+            place-items: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: var(--panel-soft);
+            color: var(--primary-color);
+            font-weight: 900;
+        }
+
+        .guide-table-wrap {
+            overflow-x: auto;
+            margin-top: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .guide-table {
+            width: 100%;
+            min-width: 720px;
+            border-collapse: collapse;
+            background: var(--panel-bg);
+        }
+
+        .guide-table th,
+        .guide-table td {
+            padding: 11px 12px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+            vertical-align: top;
+            line-height: 1.55;
+        }
+
+        .guide-table th {
+            background: var(--panel-soft);
+            color: var(--muted-color);
+            font-size: 0.76rem;
+            font-weight: 900;
+        }
+
+        .guide-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .guide-accordions {
+            display: grid;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .guide-accordions details {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--panel-bg) 92%, var(--panel-soft));
+        }
+
+        .guide-accordions summary {
+            cursor: pointer;
+            padding: 12px 14px;
+            font-weight: 900;
+        }
+
+        .guide-detail-body {
+            padding: 0 14px 14px;
+            color: var(--muted-color);
+            line-height: 1.65;
+        }
+
+        .guide-detail-body p:last-child,
+        .guide-detail-body ul:last-child {
+            margin-bottom: 0;
+        }
+
+        .guide-detail-body strong {
+            color: var(--text-color);
+        }
+
         @media (max-width: 900px) {
             .guide-hero,
             .guide-grid,
-            .guide-steps {
+            .guide-steps,
+            .guide-principles,
+            .guide-rhythm,
+            .guide-usecases {
                 grid-template-columns: 1fr;
             }
 
@@ -115,7 +291,8 @@
             }
 
             .guide-nav,
-            .guide-links {
+            .guide-links,
+            .guide-do-dont {
                 grid-template-columns: 1fr;
             }
         }
@@ -128,121 +305,346 @@
         <header class="dashboard-header">
             <div>
                 <p class="eyebrow">Life Dashboard Guide</p>
-                <h1>説明ページ</h1>
-                <p class="header-copy">このアプリの目的、画面、ユースケース、データのつながりを図で確認できます。</p>
+                <h1>Life Dashboardの使い方</h1>
+                <p class="header-copy">何を管理するかではなく、迷った時にどの画面で何を始めるかを確認するガイドです。</p>
             </div>
             <div class="header-actions">
                 <a class="action-link" href="index.html">アプリに戻る</a>
+                <a class="action-link" href="ap.html">AP Practice</a>
+                <a class="action-link" href="lab.html">Learning Lab</a>
             </div>
         </header>
 
         <nav class="guide-nav" aria-label="説明ナビゲーション">
-            <a class="guide-link" href="#purpose">目的</a>
-            <a class="guide-link" href="#flow">3分再起動</a>
+            <a class="guide-link" href="#purpose">ゴール</a>
+            <a class="guide-link" href="#start">今やること</a>
+            <a class="guide-link" href="#rhythm">利用周期</a>
             <a class="guide-link" href="#screens">画面</a>
+            <a class="guide-link" href="#usecases">ケース</a>
             <a class="guide-link" href="#data">データ</a>
+            <a class="guide-link" href="#trouble">困った時</a>
             <a class="guide-link" href="#operations">運用</a>
         </nav>
 
         <section id="purpose" class="guide-hero">
             <article class="panel">
                 <p class="eyebrow">Purpose</p>
-                <h2>管理するためではなく、始めるためのホーム画面</h2>
-                <p class="ai-summary">Life Dashboardは、タスクを完璧に整理するためだけのアプリではありません。今日の一手を選び、Resourceを開き、5分だけ始め、必要ならReminderで戻り、実績をLearning Logに残すための生活OSです。</p>
-                <div class="guide-links">
-                    <a class="guide-link" href="#flow">Flow</a>
-                    <a class="guide-link" href="#screens">Screens</a>
-                    <a class="guide-link" href="#data">Data</a>
-                    <a class="guide-link" href="#operations">Ops</a>
-                    <a class="guide-link" href="ap.html">AP</a>
-                    <a class="guide-link" href="lab.html">Lab</a>
-                    <a class="guide-link" href="index.html">App</a>
+                <h2>ゴールは、人生を管理し切ることではなく、次の小さな行動に戻れること</h2>
+                <p class="ai-summary">Life Dashboardは、Todo、学習、お金、健康、創作を一度に完璧に管理するアプリではありません。今日の状態を見て、今やることを1つ選び、必要なResourceを開き、5分だけ始めるためのホーム画面です。</p>
+                <ul class="guide-checklist">
+                    <li><span><strong>一目で分かる:</strong> 今日の状態と次の一手が3秒で見つかる。</span></li>
+                    <li><span><strong>すぐ始める:</strong> Resourceを探し直さず、5分/15分Timerへ進める。</span></li>
+                    <li><span><strong>次につなげる:</strong> 実績をLearning Logに残し、Goalと弱点復習へ戻す。</span></li>
+                </ul>
+                <div class="guide-callout">
+                    <strong>このアプリを使えた日の成功条件</strong>
+                    <p>全項目を埋めることではありません。5分始めた、1問解いた、明日の一手を1つ決めた。そのどれかで十分です。</p>
                 </div>
             </article>
             <article class="guide-diagram">
                 <pre class="mermaid">
 flowchart TD
-    A[アプリを開く] --> B[Start Console]
-    A --> R[Reminder]
-    B --> C[今日の一手]
-    B --> P[AP Practice]
+    A[迷う・止まる・脱線する] --> B[Todayを開く]
+    B --> C[次の一手を1つ選ぶ]
     C --> D[Resourceを開く]
     D --> E[5分だけ始める]
-    E --> F[Learning Log]
-    P --> F
-    F --> G[今日も再起動できた]
-    B --> L[Learning Lab]
-    L --> F
-    R --> B
+    E --> F[Learning Logに残す]
+    F --> G[Goal・弱点・明日の一手へ]
+    G --> B
                 </pre>
             </article>
         </section>
 
-        <section id="flow" class="guide-section panel">
-            <p class="eyebrow">Daily Flow</p>
-            <h2>3分再起動フロー</h2>
+        <section id="start" class="guide-section panel">
+            <p class="eyebrow">Start Here</p>
+            <h2>今アプリを開いたら、この順番だけでよい</h2>
+            <p class="section-copy">機能を理解してから使う必要はありません。まずTodayで1回動き、必要になった機能だけ後から覚えます。</p>
             <div class="guide-steps">
-                <article class="guide-step"><span>1</span><h3>見る</h3><p>Todayで「今やること」を確認します。</p></article>
-                <article class="guide-step"><span>2</span><h3>開く</h3><p>関連ResourceやShortcutを開きます。</p></article>
-                <article class="guide-step"><span>3</span><h3>始める</h3><p>5分だけ、または15分集中します。</p></article>
-                <article class="guide-step"><span>4</span><h3>残す</h3><p>Timer終了後、Learning Logに保存します。脱線しやすい日はReminderをONにします。</p></article>
+                <article class="guide-step"><span>1</span><h3>Todayを見る</h3><p>「次の一手」に出ているTodoを確認します。全Todoは見なくて構いません。</p></article>
+                <article class="guide-step"><span>2</span><h3>5分を押す</h3><p>気力があれば15分、迷っているなら5分だけを選びます。</p></article>
+                <article class="guide-step"><span>3</span><h3>Resourceを開く</h3><p>教材、Notion、開発環境、AP Practiceなど必要な場所へ進みます。</p></article>
+                <article class="guide-step"><span>4</span><h3>一言残す</h3><p>終わったら「何をやったか」だけLearning Logへ保存します。</p></article>
+            </div>
+            <div class="guide-callout">
+                <strong>「次の一手」が空の場合</strong>
+                <p>Todayの「Todoを追加」で、今日始められる行動を1つだけ作ります。例: 「応用情報を5問」「READMEを1節直す」「20分散歩」。</p>
+            </div>
+            <div class="guide-diagram">
+                <pre class="mermaid">
+flowchart LR
+    A{今やることがある?} -->|Yes| B[5分だけ始める]
+    A -->|No| C[Todoを1つ作る]
+    C --> B
+    B --> D{学習内容は?}
+    D -->|応用情報| E[AP Practice]
+    D -->|クラウド・CLI| F[Learning Lab]
+    D -->|その他| G[Resourceを開く]
+    E --> H[Learning Log]
+    F --> H
+    G --> H
+                </pre>
+            </div>
+        </section>
+
+        <section id="first-setup" class="guide-section panel">
+            <p class="eyebrow">First Setup</p>
+            <h2>最初の10分で設定するもの</h2>
+            <p class="section-copy">最初から全機能を設定すると続きません。次の5つが動けば、ひとまず完成です。</p>
+            <ul class="guide-checklist">
+                <li><span><strong>Goalを1つ:</strong> 「応用情報に合格」「アプリを公開」など、今一番進めたい方向。</span></li>
+                <li><span><strong>Todoを1つ:</strong> 今日5〜30分で着手できる行動。</span></li>
+                <li><span><strong>Resourceを1つ:</strong> 教材、URL、開発環境など、開始に必要な入口。</span></li>
+                <li><span><strong>5分Timerを1回:</strong> Start Consoleから開始と記録ができるか試す。</span></li>
+                <li><span><strong>Quick Logを1件:</strong> 「15分、応用情報、ネットワーク復習」の程度で十分。</span></li>
+            </ul>
+            <div class="guide-do-dont">
+                <article>
+                    <h3>最初にやる</h3>
+                    <p>Goal 1件、Todo 1件、Resource 1件だけ作り、実際に5分動く。</p>
+                </article>
+                <article>
+                    <h3>最初はやらない</h3>
+                    <p>全Goalの登録、過去ログの移行、全時間の予定化、スコアの最適化。</p>
+                </article>
+            </div>
+        </section>
+
+        <section id="rhythm" class="guide-section panel">
+            <p class="eyebrow">Usage Rhythm</p>
+            <h2>毎日すべての画面を使わない</h2>
+            <p class="section-copy">画面ごとに利用周期を分けます。日常はTodayだけで完結し、整理や分析は決まった日に行います。</p>
+            <div class="guide-rhythm">
+                <article>
+                    <h3>毎日: Today</h3>
+                    <p>次の一手、5分Timer、Resource、Quick Log。必要ならAP PracticeかLearning Labへ移動します。</p>
+                </article>
+                <article>
+                    <h3>週1回: Goals / Knowledge</h3>
+                    <p>Goalの進み具合、来週のTodo、学びから作るAction、曜日ごとの予定を整理します。</p>
+                </article>
+                <article>
+                    <h3>月1回: Life Balance / お金</h3>
+                    <p>幸福、健康、成長、お金、創作、休息の偏りと、資産の自由月数を確認します。</p>
+                </article>
+            </div>
+            <div class="guide-table-wrap">
+                <table class="guide-table">
+                    <thead>
+                        <tr><th>タイミング</th><th>開く画面</th><th>やること</th><th>終わりの条件</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>朝・再開時</td><td>Today</td><td>次の一手を選び、5分開始</td><td>Timerが動いた</td></tr>
+                        <tr><td>作業後</td><td>Quick Log / Logs</td><td>時間と一言を記録</td><td>実績が1件残った</td></tr>
+                        <tr><td>日曜など週1回</td><td>Goals / Knowledge / Day Planner</td><td>来週のTodoと予定を置く</td><td>次の一手候補がある</td></tr>
+                        <tr><td>月末</td><td>Life Balance / Finance</td><td>偏りと自由度を見る</td><td>来月変えることを1つ決めた</td></tr>
+                        <tr><td>接続変更時</td><td>Settings</td><td>Notion整合性を確認</td><td>不足項目が分かった</td></tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
         <section id="screens" class="guide-section panel">
             <p class="eyebrow">Screens</p>
-            <h2>画面ごとの役割</h2>
-            <div class="guide-grid">
-                <article class="guide-card"><h3>Today</h3><p>Start Console、Reminder、カテゴリ別の今日、Life Balance、Quick Log、時間配分。</p></article>
-                <article class="guide-card"><h3>Goals</h3><p>長期目標をTask、Habit、Resourceへ分解。</p></article>
-                <article class="guide-card"><h3>Knowledge</h3><p>学びを残し、ActionableならTodo化。</p></article>
-                <article class="guide-card"><h3>Logs</h3><p>活動ログ、日次レビュー、英語日記。</p></article>
-                <article class="guide-card"><h3>Projects</h3><p>Project、Goal、Resourceの作戦部屋。</p></article>
-                <article class="guide-card"><h3>AP Practice</h3><p>応用情報を最新年度、年度別、分野別、弱点復習で解く。</p></article>
-                <article class="guide-card"><h3>Learning Lab</h3><p>Cloud QuestとSandboxで、疑似クラウド、CLI、Code Runnerを実践する。</p></article>
-                <article class="guide-card"><h3>Settings</h3><p>Notion整合性とデータ管理。</p></article>
+            <h2>画面ごとの「開く理由」と「終わりの条件」</h2>
+            <p class="section-copy">機能名ではなく、いつ開くかで覚えます。毎日使う必要がない画面は、必要になるまで触らなくて構いません。</p>
+            <div class="guide-accordions">
+                <details open>
+                    <summary>Today: 迷った時と、作業を始める時</summary>
+                    <div class="guide-detail-body">
+                        <p><strong>開く時:</strong> 朝、帰宅後、SNSへ流れそうな時、中断から戻る時。</p>
+                        <p><strong>やること:</strong> 次の一手を見る → 5分/15分Timer → Resourceを開く → 記録。</p>
+                        <p><strong>補助機能:</strong> Reminderは戻るきっかけ、Day Plannerは仕事・遊び・移動を差し引いた時間設計、Life Balanceは状態確認です。</p>
+                        <p><strong>終わり:</strong> 何か1つ始めたらTodayの役目は完了です。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Goals: 長期目標を、今日できる行動へ分ける時</summary>
+                    <div class="guide-detail-body">
+                        <p><strong>開く時:</strong> 目標が曖昧、TodoがGoalにつながっていない、週次レビューをする時。</p>
+                        <p><strong>やること:</strong> Goalを1つ選び、サブタスク、習慣、Resource、成功条件を確認します。</p>
+                        <p><strong>終わり:</strong> Todayへ戻せる5〜30分のTodoが1つできたら完了です。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Knowledge: 調べたことを、次の行動へ変える時</summary>
+                    <div class="guide-detail-body">
+                        <p><strong>開く時:</strong> 学んだ内容、読書メモ、調査結果を後で使える形にしたい時。</p>
+                        <p><strong>やること:</strong> 要点を残し、実行が必要ならActionableにしてTodo化します。</p>
+                        <p><strong>終わり:</strong> 保存するだけの知識か、行動に変える知識か決まったら完了です。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Logs: 実績と振り返りを確認する時</summary>
+                    <div class="guide-detail-body">
+                        <p><strong>開く時:</strong> 作業後、夜、週次レビュー、英語日記を書く時。</p>
+                        <p><strong>やること:</strong> 活動時間、分野、メモを残す。夜は良かったことと明日の一手だけでも十分です。</p>
+                        <p><strong>終わり:</strong> 今日やったことが1件見える状態になれば完了です。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Projects / Resources: 作業環境と関連情報を整理する時</summary>
+                    <div class="guide-detail-body">
+                        <p><strong>開く時:</strong> 複数のGoalが同じ成果物につながる時、教材やURLを探す時間が長い時。</p>
+                        <p><strong>やること:</strong> ProjectにGoalとResourceをまとめ、Todoから開けるようにします。</p>
+                        <p><strong>終わり:</strong> Start Consoleから必要な場所を1クリックで開ければ完了です。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>AP Practice: 応用情報を問題演習で進める時</summary>
+                    <div class="guide-detail-body">
+                        <p><strong>開く時:</strong> 最新年度、年度別、分野別の問題を解く時。</p>
+                        <p><strong>やること:</strong> 1問解く → 即時採点 → 間違いを弱点復習へ → Learning Log保存。</p>
+                        <p><strong>注意:</strong> 「データ未追加」の年度は、公式IPA由来のJSON/CSVを追加すると演習できます。</p>
+                        <p><strong>終わり:</strong> 1問でも解けば完了です。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Learning Lab: CLIと疑似クラウドを手で試す時</summary>
+                    <div class="guide-detail-body">
+                        <p><strong>開く時:</strong> ネットワーク、認証、IAM、DB、障害対応を操作で理解したい時。</p>
+                        <p><strong>Quest:</strong> 達成条件に沿って学ぶ。順番やロックはありません。</p>
+                        <p><strong>Sandbox:</strong> Quest外で自由にコマンドやCode Runnerを試す。</p>
+                        <p><strong>終わり:</strong> 分かったことか、分からなかったことをLearning Logへ残したら完了です。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Settings: Notion連携や保存状態を直す時</summary>
+                    <div class="guide-detail-body">
+                        <p><strong>開く時:</strong> 同期できない、Notion DBを変更した、データを再読み込みしたい時。</p>
+                        <p><strong>やること:</strong> Notion整合性チェックで、DB ID不足とProperty不足を確認します。</p>
+                        <p><strong>終わり:</strong> 直すべき不足項目が特定できたら完了です。日常では開きません。</p>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <section id="usecases" class="guide-section panel">
+            <p class="eyebrow">Use Cases</p>
+            <h2>状況別に、どこから始めるか</h2>
+            <div class="guide-usecases">
+                <article>
+                    <h3>応用情報を勉強したい</h3>
+                    <p>Todayで「応用情報を5問」を選ぶ → 5分開始 → AP Practiceで最新年度 → 間違いを復習へ → Log保存。</p>
+                </article>
+                <article>
+                    <h3>アプリ開発を進めたい</h3>
+                    <p>Todayで開発Todoを選ぶ → GitHub/ローカルResourceを開く → 15分作業 → 変更内容をLogへ。</p>
+                </article>
+                <article>
+                    <h3>何もやる気が出ない</h3>
+                    <p>Life Balanceで状態を一言確認 → 5分だけか、休息Todoを選ぶ → 「今日はここまで」でも記録する。</p>
+                </article>
+                <article>
+                    <h3>CLIを触って覚えたい</h3>
+                    <p>Learning Labの好きなQuestを選ぶ → Terminalでhelp → Cloud Consoleで状態確認 → 実践ログ保存。</p>
+                </article>
+                <article>
+                    <h3>一週間が散らかっている</h3>
+                    <p>Day Plannerで曜日を選ぶ → 仕事・遊び・移動を置く → 空いた時間にTodoを割り当てる。</p>
+                </article>
+                <article>
+                    <h3>調べて満足してしまった</h3>
+                    <p>Knowledgeへ要点を残す → ActionableをON → 5〜30分のTodoへ変換 → Todayへ戻る。</p>
+                </article>
             </div>
         </section>
 
         <section id="data" class="guide-section panel">
             <p class="eyebrow">Data Model</p>
-            <h2>データのつながり</h2>
+            <h2>記録は「集めるため」ではなく、次の一手を良くするため</h2>
+            <p class="section-copy">Goal、Task、Resource、Learning Logは別々の台帳ではありません。Goalから今日のTaskを作り、実行に必要なResourceを開き、結果をLogとして戻す1本の流れです。</p>
             <div class="guide-diagram">
                 <pre class="mermaid">
-erDiagram
-    Goal ||--o{ Task : creates
-    Goal ||--o{ Resource : uses
-    Project ||--o{ Goal : contains
-    Task ||--o{ FocusSession : starts
-    FocusSession ||--|| LearningLog : converts_to
-    APQuestion ||--o{ APPracticeProgress : answered_by
-    APPracticeProgress ||--o{ LearningLog : records
-    KnowledgeNote ||--o{ Task : becomes
-    Resource ||--o{ Task : supports
-    CloudQuest ||--o{ LearningLog : records
-    SandboxPractice ||--o{ LearningLog : records
-    LifeScore ||--o{ Reflection : informs
-    MoodLog ||--o{ Reflection : informs
-    FinanceSnapshot ||--o{ Goal : expands_options
-    LearningTopic ||--o{ Task : suggests
+flowchart LR
+    A[Goal<br/>どこへ進むか] --> B[Task<br/>今日何をするか]
+    C[Knowledge<br/>何を知ったか] --> B
+    D[Resource<br/>どこで始めるか] --> B
+    B --> E[Focus Session<br/>実際に始める]
+    E --> F[Learning Log<br/>何が進んだか]
+    F --> G[Review<br/>次に変えること]
+    G --> B
+    H[AP Practice / Learning Lab] --> F
                 </pre>
+            </div>
+            <div class="guide-table-wrap">
+                <table class="guide-table">
+                    <thead><tr><th>データ</th><th>答える質問</th><th>更新頻度</th></tr></thead>
+                    <tbody>
+                        <tr><td>Goal</td><td>どこへ進みたいか</td><td>月1回・必要時</td></tr>
+                        <tr><td>Task</td><td>今日、何を始めるか</td><td>毎日・週次</td></tr>
+                        <tr><td>Resource</td><td>どこを開けば始められるか</td><td>追加時だけ</td></tr>
+                        <tr><td>Learning Log</td><td>何をどれくらいやったか</td><td>作業後</td></tr>
+                        <tr><td>Life Score / Mood</td><td>今の自分に何が足りないか</td><td>気になった日</td></tr>
+                        <tr><td>Finance Snapshot</td><td>選択肢と安心が増えているか</td><td>月1回</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="trouble" class="guide-section panel">
+            <p class="eyebrow">Troubleshooting</p>
+            <h2>迷った時と、うまく動かない時</h2>
+            <div class="guide-accordions">
+                <details open>
+                    <summary>何をしたらいいか分からない</summary>
+                    <div class="guide-detail-body">
+                        <p>Todayへ戻り、「次の一手」を1つだけ見ます。空ならTodoを1つ作り、5分Timerを押します。他の画面は閉じて構いません。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Todoが多すぎて選べない</summary>
+                    <div class="guide-detail-body">
+                        <p>「今日中」「Resourceがある」「見積30分以下」のどれかを満たすものを1つ選びます。残りの整理は週次レビューへ送ります。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>記録が面倒で続かない</summary>
+                    <div class="guide-detail-body">
+                        <p>Quick Logで「分・領域・一言」だけ残します。理解度、タグ、関連Goalなどは毎回入力しなくて構いません。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>Notionと同期できない</summary>
+                    <div class="guide-detail-body">
+                        <p>SettingsのNotion整合性チェックを開きます。DB ID不足とProperty不足が分けて表示されます。同期失敗中もローカルデータで利用できます。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>AP Practiceに問題がない年度がある</summary>
+                    <div class="guide-detail-body">
+                        <p>「データ未追加」は故障ではありません。IPA公式問題を確認し、JSON/CSV化したデータをAP Practiceのインポートから追加します。</p>
+                    </div>
+                </details>
+                <details>
+                    <summary>気分や体調が悪く、スコアを見たくない</summary>
+                    <div class="guide-detail-body">
+                        <p>スコアを改善する必要はありません。休息、散歩、睡眠準備も正当な次の一手です。「今日はここまで」を選ぶことも軌道修正です。</p>
+                    </div>
+                </details>
             </div>
         </section>
 
         <section id="operations" class="guide-section panel">
             <p class="eyebrow">Operations</p>
-            <h2>Notion整合性チェック</h2>
-            <div class="guide-diagram">
-                <pre class="mermaid">
-flowchart TD
-    A[Settings] --> B[Notion DB整合性チェック]
-    B --> C{不足あり?}
-    C -->|なし| D[OK]
-    C -->|DB ID不足| E[Script Propertiesを修正]
-    C -->|Property不足| F[Notion DBにProperty追加]
-    E --> G[再チェック]
-    F --> G
-                </pre>
+            <h2>保存・同期・詳しい説明</h2>
+            <p class="section-copy">日常利用では意識しなくて構いません。接続変更やデータ追加の時だけ確認します。</p>
+            <div class="guide-grid">
+                <article class="guide-card">
+                    <h3>Notion整合性</h3>
+                    <p>Settingsで不足DB IDと不足Propertyを確認します。自動作成はせず、直すべき内容を表示します。</p>
+                </article>
+                <article class="guide-card">
+                    <h3>ローカル保存</h3>
+                    <p>Timer、AP進捗、Sandbox、同期失敗時データはlocalStorageに保存されます。共有PCでの利用には注意してください。</p>
+                </article>
+                <article class="guide-card">
+                    <h3>詳細ドキュメント</h3>
+                    <p><code>.explainApp/</code> に画面、ユースケース、データモデル、運用ガイドがあります。</p>
+                </article>
+            </div>
+            <div class="guide-callout">
+                <strong>最後に覚えることは1つだけ</strong>
+                <p>迷ったらTodayへ戻り、次の一手を5分だけ始める。それ以外の機能は、その行動を楽にするためにあります。</p>
             </div>
         </section>
     </main>
